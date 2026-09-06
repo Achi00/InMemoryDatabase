@@ -59,7 +59,7 @@ namespace InMemoryDatabase.TCP
                         byte[] responseBytes = Encoding.UTF8.GetBytes(response);
 
                         // write data back to client
-                        await stream.WriteAsync(buffer, 0, responseBytes.Length);
+                        await stream.WriteAsync(responseBytes, 0, responseBytes.Length);
                     }
                 }
                 catch (Exception ex)
