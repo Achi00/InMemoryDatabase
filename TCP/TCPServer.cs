@@ -34,10 +34,9 @@ namespace InMemoryDatabase.TCP
                     if (client != null)
                     {
                         Console.WriteLine($"[SERVER] Client connected from: {client.Client.RemoteEndPoint}");
+                        // handle each client in seperate task to avoid blocking new connections
+                        _ = Task.Run(() => HandleClientAsync(client));
                     }
-
-                    // handle each client in seperate task to avoid blocking new connections
-                    _ = Task.Run(() => HandleClientAsync(client));
                 }
             }
             finally
