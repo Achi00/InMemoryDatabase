@@ -8,7 +8,7 @@ namespace InMemoryDatabase.TCP
     {
         private const int Port = 8888;
 
-        public static async Task Start(string[] args)
+        public static async Task Start()
         {
             // listens all available network interfaces
             var server = new TcpListener(IPAddress.Any, Port);
@@ -28,7 +28,7 @@ namespace InMemoryDatabase.TCP
                     _ = Task.Run(() => HandleClientAsync(client));
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 Console.WriteLine($"[SERVER ERROR] {ex.Message}");
             }
@@ -62,7 +62,7 @@ namespace InMemoryDatabase.TCP
                         await stream.WriteAsync(buffer, 0, responseBytes.Length);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     Console.WriteLine($"[CLIENT ERROR] {ex.Message}");
                     throw;
