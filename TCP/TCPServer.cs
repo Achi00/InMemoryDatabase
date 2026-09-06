@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace InMemoryDatabase.TCP
 {
@@ -37,9 +38,38 @@ namespace InMemoryDatabase.TCP
             }
         }
 
-        private static void HandleClientAsync(TcpClient client)
+        private static async Task HandleClientAsync(TcpClient client)
         {
-            throw new NotImplementedException();
+            using(client)
+            using (NetworkStream stream = client.GetStream())
+            {
+                var buffer = new byte[1024];
+                int byteRead;
+
+                try
+                {
+                    // read data continuosly from client stream
+                    while ((byteRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    {
+                        string receivedMessage = Encoding.UTF8.GetString(buffer, 0, byteRead);
+                        Console.WriteLine($"[RECEIVED]: {receivedMessage}");
+
+                        // echo back, simple response for testing
+                        string response = $"Server echoed: {receivedMessage}";
+                        byte[] responseBytes = Encoding.UTF8.GetBytes(response);
+
+                        // write data back to client
+                        await stream.WriteAsync(buffer, 0, responseBytes.Length);
+                    }
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine($"[CLIENT ERROR] {ex.Message}");
+                    throw;
+                }
+            }
+
+            Console.WriteLine("[SERVER] Client disconnected.");
         }
     }
 }
