@@ -8,7 +8,7 @@ namespace InMemoryDatabase.TCP
     {
         private const int Port = 8888;
 
-        public static async Task Start()
+        public static async Task Start(CancellationToken cancellationToken)
         {
             // listens all available network interfaces
             var server = new TcpListener(IPAddress.Any, Port);
@@ -19,18 +19,26 @@ namespace InMemoryDatabase.TCP
 
                 Console.WriteLine($"[SERVER] Started, Listening on port {Port}");
 
-                while (true)
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    var client = await server.AcceptTcpClientAsync();
-                    Console.WriteLine($"[SERVER] Client connected from: {client.Client.RemoteEndPoint}");
+                    TcpClient? client = null;
+                    try
+                    {
+                        client = await server.AcceptTcpClientAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[SERVER ERROR] {ex.Message}");
+                    }
+
+                    if (client != null)
+                    {
+                        Console.WriteLine($"[SERVER] Client connected from: {client.Client.RemoteEndPoint}");
+                    }
 
                     // handle each client in seperate task to avoid blocking new connections
                     _ = Task.Run(() => HandleClientAsync(client));
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[SERVER ERROR] {ex.Message}");
             }
             finally
             {
