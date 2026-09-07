@@ -8,6 +8,7 @@ namespace InMemoryDatabase.TCP
     {
         private const int Port = 8888;
 
+        // TODO: add pipelines and ReadOnlySequence in future
         public static async Task Start(CancellationToken cancellationToken)
         {
             // listens all available network interfaces
