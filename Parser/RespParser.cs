@@ -65,7 +65,7 @@ namespace InMemoryDatabase.Parser
                 Span<byte> localSpan = stackalloc byte[(int)line.Length];
                 line.CopyTo(localSpan);
                
-                if (!System.Buffers.Text.Utf8Parser.TryParse(localSpan, out int result, out _))
+                if (!Utf8Parser.TryParse(localSpan, out int result, out _))
                 {
                     throw new RespProtocolException("Invalid integer format");
                 }
