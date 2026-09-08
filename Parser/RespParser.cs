@@ -10,12 +10,29 @@ namespace InMemoryDatabase.Parser
         // should embed static data in assembly with no runtime allocation and no stack reservation, without stackalloc!
         private static ReadOnlySpan<byte> Crlf => new byte[] { (byte)'\r', (byte)'\n' };
 
-        public static RespValue Parser(ref SequenceReader<byte> reader)
+        // protects call stack
+        private const int MaxNestingDepth = 32;
+        private const int MaxArrayElements = 1_000_000;
+
+        public static RespValue Parser(ref SequenceReader<byte> reader, int depth)
         {
-            if (!reader.TryRead(out byte prefix))
+            //if (!reader.TryRead(out byte prefix))
+            //{
+            //    throw new RespProtocolException("Unexpected end of input");
+            //}
+
+            if (depth > MaxNestingDepth)
+            {
+                throw new RespProtocolException("Array nesting too deep");
+            }
+
+            if (!reader.TryPeek(out byte prefix))
             {
                 throw new RespProtocolException("Unexpected end of input");
             }
+
+            // consume the type byte
+            reader.Advance(1);
 
             return prefix switch
             {
@@ -23,21 +40,30 @@ namespace InMemoryDatabase.Parser
                 (byte)'-' => ParseError(ref reader),
                 (byte)':' => ParseInteger(ref reader),
                 (byte)'$' => ParseBulkString(ref reader),
-                (byte)'*' => ParseArray(ref reader),
+                (byte)'*' => ParseArray(ref reader, depth + 1),
                 _ => throw new RespProtocolException($"Unknown prefix: {(char)prefix}")
             };
         }
 
         // zero allication array parser
-        private static RespValue ParseArray(ref SequenceReader<byte> reader)
+        private static RespValue ParseArray(ref SequenceReader<byte> reader, int depth)
         {
             int count = ReadIntLine(ref reader);
 
+            if (count < 0)
+            {
+                return RespValue.NullArray();
+            }
+            if (count > MaxArrayElements)
+            {
+                throw new RespProtocolException("Array too large");
+            }
+            
             var items = new RespValue[count];
 
             for (int i = 0; i < count; i++)
             {
-                items[i] = ParseArray(ref reader);
+                items[i] = ParseArray(ref reader, depth);
             }
 
             return RespValue.Array(items);
@@ -88,6 +114,19 @@ namespace InMemoryDatabase.Parser
 
         private static RespValue ParseBulkString(ref SequenceReader<byte> reader)
         {
+            //if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
+            //{
+            //    throw new RespProtocolException("Incomplete line");
+            //}
+
+            //if (line.IsSingleSegment)
+            //{
+            //    if (!Utf8Parser.TryParse(line.FirstSpan, out int result, out _))
+            //    {
+            //        throw new RespProtocolException("Invalid integer format");
+            //    }
+            //    return result;
+            //}
             throw new NotImplementedException();
         }
 
