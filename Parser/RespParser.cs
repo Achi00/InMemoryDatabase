@@ -7,6 +7,9 @@ namespace InMemoryDatabase.Parser
 {
     public static class RespParser
     {
+        // should embed static data in assembly with no runtime allocation and no stack reservation, without stackalloc!
+        private static ReadOnlySpan<byte> Crlf => new byte[] { (byte)'\r', (byte)'\n' };
+
         public static RespValue Parser(ref SequenceReader<byte> reader)
         {
             if (!reader.TryRead(out byte prefix))
@@ -42,9 +45,6 @@ namespace InMemoryDatabase.Parser
 
         private static int ReadIntLine(ref SequenceReader<byte> reader)
         {
-            // look for delimiter \r\n
-            ReadOnlySpan<byte> crlf = stackalloc byte[] { (byte)'\r', (byte)'\n' };
-
             // tryes to read data untill specified delimiter is matched in span above
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, crlf))
             {
