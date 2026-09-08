@@ -2,6 +2,7 @@
 using InMemoryDatabase.Parser.Models;
 using System.Buffers;
 using System.Buffers.Text;
+using System.Text;
 
 namespace InMemoryDatabase.Parser
 {
@@ -13,6 +14,8 @@ namespace InMemoryDatabase.Parser
         // protects call stack
         private const int MaxNestingDepth = 32;
         private const int MaxArrayElements = 1_000_000;
+        // 512 MB cap size for BulkStrings
+        private const int MaxBulkStringLength = 512 * 1024 * 1024;
 
         public static RespValue Parser(ref SequenceReader<byte> reader, int depth)
         {
@@ -114,20 +117,36 @@ namespace InMemoryDatabase.Parser
 
         private static RespValue ParseBulkString(ref SequenceReader<byte> reader)
         {
-            //if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
-            //{
-            //    throw new RespProtocolException("Incomplete line");
-            //}
+            int length = ReadIntLine(ref reader);
 
-            //if (line.IsSingleSegment)
-            //{
-            //    if (!Utf8Parser.TryParse(line.FirstSpan, out int result, out _))
-            //    {
-            //        throw new RespProtocolException("Invalid integer format");
-            //    }
-            //    return result;
-            //}
-            throw new NotImplementedException();
+            if (length < 0)
+            {
+                return RespValue.NullBulkString();
+            }
+            if (length > MaxBulkStringLength)
+            {
+                throw new RespProtocolException("Bulk string too large");
+            }
+            // +2 for trailing \r\n
+            if (reader.Remaining < length + 2) 
+            {
+                throw new RespProtocolException("Incomplete bulk string");
+            }
+
+            ReadOnlySequence<byte> payload = reader.Sequence.Slice(reader.Position, length);
+            reader.Advance(length);
+
+            if (!reader.IsNext((ReadOnlySpan<byte>)Crlf, advancePast: true))
+            {
+                throw new RespProtocolException("Missing CRLF after bulk string");
+            }
+
+            string value = payload.IsSingleSegment
+                ? Encoding.UTF8.GetString(payload.FirstSpan)
+                // fallback, allocates the array too
+                : Encoding.UTF8.GetString(payload.ToArray());
+
+            return RespValue.BulkString(value);
         }
 
         private static RespValue ParseInteger(ref SequenceReader<byte> reader)

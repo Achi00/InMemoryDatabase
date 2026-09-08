@@ -25,6 +25,11 @@ namespace InMemoryDatabase.Parser.Models
             return new(RespValueType.Null, array: null);
         }
 
+        internal static RespValue NullBulkString()
+        {
+            return new(RespValueType.Null);
+        }
+
         public static RespValue Null { get; } = new(RespValueType.Null);
     }
 }
