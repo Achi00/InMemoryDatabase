@@ -45,6 +45,7 @@ namespace InMemoryDatabase.Parser
             // look for delimiter \r\n
             ReadOnlySpan<byte> crlf = stackalloc byte[] { (byte)'\r', (byte)'\n' };
 
+            // tryes to read data untill specified delimiter is matched in span above
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, crlf))
             {
                 throw new RespProtocolException("Incomplete line");
@@ -62,6 +63,15 @@ namespace InMemoryDatabase.Parser
             else
             {
                 // fallback for multi-segment sequences
+
+                // added safety buffer
+                const int MaxIntLineLength = 20;
+                // because of stack allocation if number is too long, stack overflow will happend
+                if (line.Length > MaxIntLineLength)
+                {
+                    throw new RespProtocolException("Integer line too long");
+                }
+
                 Span<byte> localSpan = stackalloc byte[(int)line.Length];
                 line.CopyTo(localSpan);
                
