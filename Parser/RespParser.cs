@@ -46,12 +46,13 @@ namespace InMemoryDatabase.Parser
         private static int ReadIntLine(ref SequenceReader<byte> reader)
         {
             // tryes to read data untill specified delimiter is matched in span above
-            if (!reader.TryReadTo(out ReadOnlySequence<byte> line, crlf))
+            if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
             {
                 throw new RespProtocolException("Incomplete line");
             }
 
             // ascii to integer
+            // if data is in one contigues block of memory, no reconstruction needed
             if (line.IsSingleSegment)
             {
                 if (!Utf8Parser.TryParse(line.FirstSpan, out int result, out _))
@@ -66,12 +67,13 @@ namespace InMemoryDatabase.Parser
 
                 // added safety buffer
                 const int MaxIntLineLength = 20;
-                // because of stack allocation if number is too long, stack overflow will happend
+                // because of stack allocation, if number is too long, stack overflow will happend
                 if (line.Length > MaxIntLineLength)
                 {
                     throw new RespProtocolException("Integer line too long");
                 }
 
+                // copy data into single one contiguous buffer if multiple segment arrives
                 Span<byte> localSpan = stackalloc byte[(int)line.Length];
                 line.CopyTo(localSpan);
                
