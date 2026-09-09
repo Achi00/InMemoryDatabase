@@ -20,15 +20,8 @@ namespace InMemoryDatabase.Parser.Models
         public static RespValue BulkString(string s) => new(RespValueType.BulkString, str: s);
         public static RespValue Array(RespValue[] items) => new(RespValueType.Array, array: items);
 
-        internal static RespValue NullArray()
-        {
-            return new(RespValueType.Null, array: null);
-        }
-
-        internal static RespValue NullBulkString()
-        {
-            return new(RespValueType.Null);
-        }
+        public static RespValue NullArray() => new(RespValueType.Null, array: null);
+        public static RespValue NullBulkString() => new(RespValueType.Null);
 
         public static RespValue Null { get; } = new(RespValueType.Null);
     }
