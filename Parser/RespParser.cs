@@ -153,17 +153,21 @@ namespace InMemoryDatabase.Parser
 
         private static RespValue ParseError(ref SequenceReader<byte> reader)
         {
-            int length = ReadIntLine(ref reader);
-
-            if (length < 0)
-            {
-                return RespValue.NullBulkString();
-            }
+            throw new NotImplementedException();
         }
 
         private static RespValue ParseSimpleString(ref SequenceReader<byte> reader)
         {
-            throw new NotImplementedException();
+            if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
+            {
+                throw new RespProtocolException("Incomplete simple string");
+            }
+
+            var value = line.IsSingleSegment
+                ? Encoding.UTF8.GetString(line.FirstSpan)
+                : Encoding.UTF8.GetString(line.ToArray());
+
+            return RespValue.SimpleString(value);
         }
     }
 }
