@@ -17,7 +17,7 @@ namespace InMemoryDatabase.Parser
         // 512 MB cap size for BulkStrings
         private const int MaxBulkStringLength = 512 * 1024 * 1024;
 
-        public static RespValue Parser(ref SequenceReader<byte> reader, int depth)
+        public static RespValue ParseValue(ref SequenceReader<byte> reader, int depth)
         {
             //if (!reader.TryRead(out byte prefix))
             //{
@@ -66,7 +66,7 @@ namespace InMemoryDatabase.Parser
 
             for (int i = 0; i < count; i++)
             {
-                items[i] = ParseArray(ref reader, depth);
+                items[i] = ParseValue(ref reader, depth);
             }
 
             return RespValue.Array(items);
@@ -153,7 +153,12 @@ namespace InMemoryDatabase.Parser
 
         private static RespValue ParseError(ref SequenceReader<byte> reader)
         {
-            throw new NotImplementedException();
+            int length = ReadIntLine(ref reader);
+
+            if (length < 0)
+            {
+                return RespValue.NullBulkString();
+            }
         }
 
         private static RespValue ParseSimpleString(ref SequenceReader<byte> reader)
