@@ -34,14 +34,14 @@ namespace InMemoryDatabase.Parser
                 throw new RespProtocolException("Unexpected end of input");
             }
 
-            // consume the type byte
+            // consume the type byte, move readers internal cursor
             reader.Advance(1);
 
             return prefix switch
             {
                 (byte)'+' => ParseSimpleString(ref reader),
                 (byte)'-' => ParseError(ref reader),
-                (byte)':' => ParseInteger(ref reader),
+                (byte)':' => RespValue.Integer(ReadIntLine(ref reader)),
                 (byte)'$' => ParseBulkString(ref reader),
                 (byte)'*' => ParseArray(ref reader, depth + 1),
                 _ => throw new RespProtocolException($"Unknown prefix: {(char)prefix}")
@@ -74,7 +74,7 @@ namespace InMemoryDatabase.Parser
 
         private static int ReadIntLine(ref SequenceReader<byte> reader)
         {
-            // tryes to read data untill specified delimiter is matched in span above
+            // tryes to read data untill specified delimiter is matched in span above, moves reader cursor withit
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
             {
                 throw new RespProtocolException("Incomplete line");
@@ -123,6 +123,7 @@ namespace InMemoryDatabase.Parser
             {
                 return RespValue.NullBulkString();
             }
+            // 512 MB cap
             if (length > MaxBulkStringLength)
             {
                 throw new RespProtocolException("Bulk string too large");
@@ -134,6 +135,7 @@ namespace InMemoryDatabase.Parser
             }
 
             ReadOnlySequence<byte> payload = reader.Sequence.Slice(reader.Position, length);
+            // move readers internal cursor
             reader.Advance(length);
 
             if (!reader.IsNext((ReadOnlySpan<byte>)Crlf, advancePast: true))
@@ -147,11 +149,6 @@ namespace InMemoryDatabase.Parser
                 : Encoding.UTF8.GetString(payload.ToArray());
 
             return RespValue.BulkString(value);
-        }
-
-        private static RespValue ParseInteger(ref SequenceReader<byte> reader)
-        {
-            throw new NotImplementedException();
         }
 
         private static RespValue ParseError(ref SequenceReader<byte> reader)
