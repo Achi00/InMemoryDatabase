@@ -155,7 +155,7 @@ namespace InMemoryDatabase.Parser
         {
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
             {
-                throw new RespProtocolException("Incomplete simple string");
+                throw new RespProtocolException("Incomplete error line");
             }
 
             var value = line.IsSingleSegment
