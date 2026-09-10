@@ -75,10 +75,7 @@ namespace InMemoryDatabase.Parser
         private static int ReadIntLine(ref SequenceReader<byte> reader)
         {
             // tryes to read data untill specified delimiter is matched in span above, moves reader cursor withit
-            if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
-            {
-                throw new RespProtocolException("Incomplete line");
-            }
+            ReadOnlySequence<byte> line = ReadLine(ref reader);
 
             // ascii to integer
             // if data is in one contigues block of memory, no reconstruction needed
@@ -151,32 +148,21 @@ namespace InMemoryDatabase.Parser
             return RespValue.BulkString(value);
         }
 
-        private static RespValue ParseError(ref SequenceReader<byte> reader)
+        private static RespValue ParseError(ref SequenceReader<byte> reader) => RespValue.Error(LineToString(ReadLine(ref reader)));
+
+        private static RespValue ParseSimpleString(ref SequenceReader<byte> reader) => RespValue.SimpleString(LineToString(ReadLine(ref reader)));
+
+        // checking lines and segments
+        private static ReadOnlySequence<byte> ReadLine(ref SequenceReader<byte> reader)
         {
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
-            {
-                throw new RespProtocolException("Incomplete error line");
-            }
-
-            var value = line.IsSingleSegment
-                ? Encoding.UTF8.GetString(line.FirstSpan)
-                : Encoding.UTF8.GetString(line.ToArray());
-
-            return RespValue.Error(value);
+                throw new RespProtocolException("Incomplete line");
+            return line;
         }
 
-        private static RespValue ParseSimpleString(ref SequenceReader<byte> reader)
-        {
-            if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
-            {
-                throw new RespProtocolException("Incomplete simple string");
-            }
-
-            var value = line.IsSingleSegment
+        private static string LineToString(ReadOnlySequence<byte> line) =>
+            line.IsSingleSegment
                 ? Encoding.UTF8.GetString(line.FirstSpan)
                 : Encoding.UTF8.GetString(line.ToArray());
-
-            return RespValue.SimpleString(value);
-        }
     }
 }
