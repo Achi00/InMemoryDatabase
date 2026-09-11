@@ -26,7 +26,7 @@ namespace InMemoryDatabase.Parser
 
             if (!reader.TryPeek(out byte prefix))
             {
-                throw new RespProtocolException("Unexpected end of input");
+                throw new RespIncompleteDataException();
             }
 
             // consume the type byte, move readers internal cursor
@@ -123,7 +123,7 @@ namespace InMemoryDatabase.Parser
             // +2 for trailing \r\n
             if (reader.Remaining < length + 2) 
             {
-                throw new RespProtocolException("Incomplete bulk string");
+                throw new RespIncompleteDataException();
             }
 
             ReadOnlySequence<byte> payload = reader.Sequence.Slice(reader.Position, length);
