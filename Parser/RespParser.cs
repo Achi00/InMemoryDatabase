@@ -150,9 +150,10 @@ namespace InMemoryDatabase.Parser
         // checking lines and segments
         private static ReadOnlySequence<byte> ReadLine(ref SequenceReader<byte> reader)
         {
+            // if TryReadTo returns false at this points means that it searched every byte in current buffer and no delimiter "\r\n", meaning incomplete line
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
             {
-                throw new RespProtocolException("Incomplete line");
+                throw new RespIncompleteDataException();
             }
 
             return line;

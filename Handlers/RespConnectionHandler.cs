@@ -3,16 +3,18 @@ using InMemoryDatabase.Parser;
 using InMemoryDatabase.Parser.Models;
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Reflection.PortableExecutable;
 
 namespace InMemoryDatabase.Handlers
 {
     public class RespConnectionHandler
     {
-        public async Task ProcessAsync(PipeReader reader, CancellationToken cancellationToken)
+        public async Task ProcessAsync(PipeReader reader, CancellationToken ct)
         {
             while (true)
             {
-                
+                ReadResult result = await reader.ReadAsync(ct);
+                ReadOnlySequence<byte> buffer = result.Buffer;
             }
         }
 
@@ -34,6 +36,7 @@ namespace InMemoryDatabase.Handlers
                 // wait for more data from pipe, buffer is unchanged, no throwing
                 return false;
             }
+            // RespProtocolException not cought here, it should bubble up and kill connection
         }
     }
 }
