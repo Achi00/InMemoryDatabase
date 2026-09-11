@@ -165,6 +165,7 @@ namespace InMemoryDatabase.Parser
                 throw new RespIncompleteDataException();
             }
 
+            // found delimiter but line before it was too long
             if (line.Length > MAX_INLINE_LINE_LENGHT)
             {
                 throw new RespProtocolException("Line too long");
