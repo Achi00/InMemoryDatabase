@@ -12,14 +12,17 @@ namespace InMemoryDatabase.Parser
         private static ReadOnlySpan<byte> Crlf => new byte[] { (byte)'\r', (byte)'\n' };
 
         // protects call stack
-        private const int MaxNestingDepth = 32;
-        private const int MaxArrayElements = 1_000_000;
+        private const int MAX_NESTING_DEPTH = 32;
+        private const int MAX_ARRAY_ELEMENTS = 1_000_000;
         // 512 MB cap size for BulkStrings
-        private const int MaxBulkStringLength = 512 * 1024 * 1024;
+        private const int MAX_BULK_STRING_LENGTH = 512 * 1024 * 1024;
+
+        // ReadLine's lenght cap, 64 KB
+        private const int MAX_INLINE_LINE_LENGHT = 64 * 1024;
 
         public static RespValue ParseValue(ref SequenceReader<byte> reader, int depth)
         {
-            if (depth > MaxNestingDepth)
+            if (depth > MAX_NESTING_DEPTH)
             {
                 throw new RespProtocolException("Array nesting too deep");
             }
@@ -52,7 +55,7 @@ namespace InMemoryDatabase.Parser
             {
                 return RespValue.NullArray();
             }
-            if (count > MaxArrayElements)
+            if (count > MAX_ARRAY_ELEMENTS)
             {
                 throw new RespProtocolException("Array too large");
             }
@@ -116,7 +119,7 @@ namespace InMemoryDatabase.Parser
                 return RespValue.NullBulkString();
             }
             // 512 MB cap
-            if (length > MaxBulkStringLength)
+            if (length > MAX_BULK_STRING_LENGTH)
             {
                 throw new RespProtocolException("Bulk string too large");
             }
@@ -153,7 +156,18 @@ namespace InMemoryDatabase.Parser
             // if TryReadTo returns false at this points means that it searched every byte in current buffer and no delimiter "\r\n", meaning incomplete line
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
             {
+                // if buffered more than inline max cap and still no delimiters, dont wait for more data, avoiding potential abuse
+                if (reader.Remaining > MAX_INLINE_LINE_LENGHT)
+                {
+                    throw new RespProtocolException("Line too long or missing terminator");
+                }
+
                 throw new RespIncompleteDataException();
+            }
+
+            if (line.Length > MAX_INLINE_LINE_LENGHT)
+            {
+                throw new RespProtocolException("Line too long");
             }
 
             return line;
