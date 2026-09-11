@@ -19,11 +19,6 @@ namespace InMemoryDatabase.Parser
 
         public static RespValue ParseValue(ref SequenceReader<byte> reader, int depth)
         {
-            //if (!reader.TryRead(out byte prefix))
-            //{
-            //    throw new RespProtocolException("Unexpected end of input");
-            //}
-
             if (depth > MaxNestingDepth)
             {
                 throw new RespProtocolException("Array nesting too deep");
@@ -156,7 +151,10 @@ namespace InMemoryDatabase.Parser
         private static ReadOnlySequence<byte> ReadLine(ref SequenceReader<byte> reader)
         {
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
+            {
                 throw new RespProtocolException("Incomplete line");
+            }
+
             return line;
         }
 

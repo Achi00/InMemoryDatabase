@@ -5,7 +5,7 @@ namespace InMemoryDatabase.Parser.Models
     public readonly struct RespValue
     {
         public RespValueType Type { get; }
-        public string TypeString { get; }
+        public string? TypeString { get; }
         public long TypeInteger { get; }
         public RespValue[] TypeArray { get; }
 
