@@ -15,6 +15,18 @@ namespace InMemoryDatabase.Handlers
             {
                 ReadResult result = await reader.ReadAsync(ct);
                 ReadOnlySequence<byte> buffer = result.Buffer;
+
+                while (TryParseOne(ref buffer, out var command))
+                {
+                    // command is passed to method which should execute it
+                }
+
+                reader.AdvanceTo(buffer.Start, buffer.End);
+
+                if (result.IsCompleted)
+                {
+                    break;
+                }
             }
         }
 
