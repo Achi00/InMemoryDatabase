@@ -1,9 +1,14 @@
-﻿using InMemoryDatabase.Parser;
-using InMemoryDatabase.Parser.Enums;
-using InMemoryDatabase.Parser.Models;
-using InMemoryDatabase.TCP;
-using System.Buffers;
-using System.Text;
+﻿using InMemoryDatabase.Servers;
 
+var cts = new CancellationTokenSource();
 
-await TCPServer.Start(CancellationToken.None);
+Console.CancelKeyPress += (_, e) =>
+{
+    e.Cancel = true;
+    cts.Cancel();
+};
+
+var server = new RespServer(6380);
+
+await server.RunAsync(cts.Token);
+
