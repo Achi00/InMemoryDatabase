@@ -52,11 +52,37 @@ var multiSegSequence = new ReadOnlySequence<byte>(first, 0, last, part2.Length);
 var reader2 = new SequenceReader<byte>(multiSegSequence);
 RespValue result2 = RespParser.ParseValue(ref reader2, depth: 0);
 
+PrintRespValue(result2);
 
-Console.WriteLine(result2.Type);
-Console.WriteLine(result2.TypeString);
-Console.WriteLine(result2.TypeInteger);
-Console.WriteLine(result2.TypeArray);
+void PrintRespValue(RespValue value, int indent = 0)
+{
+    string pad = new string(' ', indent * 2);
+
+    switch (value.Type)
+    {
+        case RespValueType.SimpleString:
+            Console.WriteLine($"{pad}SimpleString: {value.TypeString}");
+            break;
+        case RespValueType.Error:
+            Console.WriteLine($"{pad}Error: {value.TypeString}");
+            break;
+        case RespValueType.Integer:
+            Console.WriteLine($"{pad}Integer: {value.TypeInteger}");
+            break;
+        case RespValueType.BulkString:
+            Console.WriteLine($"{pad}BulkString: {value.TypeString}");
+            break;
+        case RespValueType.Null:
+            Console.WriteLine($"{pad}Null");
+            break;
+        case RespValueType.Array:
+            Console.WriteLine($"{pad}Array[{value.TypeArray.Length}]:");
+            foreach (var item in value.TypeArray)
+                PrintRespValue(item, indent + 1);
+            break;
+    }
+}
+
 class SequenceSegment : ReadOnlySequenceSegment<byte>
 {
     public SequenceSegment(ReadOnlyMemory<byte> memory) => Memory = memory;
