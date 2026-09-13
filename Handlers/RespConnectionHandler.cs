@@ -9,7 +9,7 @@ namespace InMemoryDatabase.Handlers
 {
     public class RespConnectionHandler
     {
-        public async Task ProcessAsync(PipeReader reader, CancellationToken ct)
+        public static async Task ProcessAsync(PipeReader reader, CancellationToken ct)
         {
             while (true)
             {
