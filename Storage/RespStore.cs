@@ -12,9 +12,9 @@ namespace InMemoryDatabase.Storage
             _data[key] = value; 
         }
 
-        public void TryGet(string key, out RespValue value)
+        public bool TryGet(string key, out RespValue value)
         {
-            _data.TryGetValue(key, out value);
+            return _data.TryGetValue(key, out value);
         }
     }
 }

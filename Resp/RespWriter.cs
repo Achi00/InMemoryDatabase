@@ -5,6 +5,8 @@ using System.Text;
 
 namespace InMemoryDatabase.Resp
 {
+    // knows how to serialize RespValue struct into shape which writer expects
+    // will write bytes into watever caller gaves it, IBufferWriter<byte> in this case PipeWriter
     public static class RespWriter
     {
         public static void Write(RespValue value, IBufferWriter<byte> writer)
@@ -44,10 +46,15 @@ namespace InMemoryDatabase.Resp
                 WriteRaw(writer, "$-1\r\n");
                 return;
             }
+
             byte[] bytes = Encoding.UTF8.GetBytes(s);
             WriteRaw(writer, $"${bytes.Length}\r\n");
+
+            // pre allocated memory from IBufferWriter with size hint and copies bytes into
             Span<byte> span = writer.GetSpan(bytes.Length);
             bytes.CopyTo(span);
+
+            // move internal cursor by written byte size
             writer.Advance(bytes.Length);
             WriteRaw(writer, "\r\n");
         }

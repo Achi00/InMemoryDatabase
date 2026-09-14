@@ -9,11 +9,26 @@ namespace InMemoryDatabase.Handlers
 {
     public class RespConnectionHandler
     {
-        public static async Task ProcessAsync(PipeReader reader, CancellationToken ct)
+        private static readonly TimeSpan IncompleteCommandTimeout = TimeSpan.FromSeconds(10);
+
+        public static async Task ProcessAsync(PipeReader reader, PipeWriter pipeWriter, RespCommandExecutor executor, CancellationToken ct)
         {
             while (true)
             {
-                ReadResult result = await reader.ReadAsync(ct);
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(IncompleteCommandTimeout);
+
+                ReadResult result;
+
+                try
+                {
+                    result = await reader.ReadAsync(ct);
+                }
+                catch (Exception)
+                {
+
+                    throw;
+                }
                 ReadOnlySequence<byte> buffer = result.Buffer;
 
                 while (TryParseOne(ref buffer, out var command))
