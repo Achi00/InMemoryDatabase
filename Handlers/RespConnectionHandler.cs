@@ -1,7 +1,9 @@
 ﻿using InMemoryDatabase.Exceptions;
+using InMemoryDatabase.Exucutors;
 using InMemoryDatabase.Parser;
 using InMemoryDatabase.Parser.Enums;
 using InMemoryDatabase.Parser.Models;
+using InMemoryDatabase.Resp;
 using System.Buffers;
 using System.IO.Pipelines;
 
@@ -11,10 +13,11 @@ namespace InMemoryDatabase.Handlers
     {
         private static readonly TimeSpan IncompleteCommandTimeout = TimeSpan.FromSeconds(10);
 
-        public static async Task ProcessAsync(PipeReader reader, PipeWriter pipeWriter, RespCommandExecutor executor, CancellationToken ct)
+        public static async Task ProcessAsync(PipeReader pipeReader, PipeWriter pipeWriter, RespCommandExecutor executor, CancellationToken ct)
         {
             while (true)
             {
+                // trigger timeout in case process hand or not responsing
                 using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeoutCts.CancelAfter(IncompleteCommandTimeout);
 
@@ -22,22 +25,26 @@ namespace InMemoryDatabase.Handlers
 
                 try
                 {
-                    result = await reader.ReadAsync(ct);
+                    result = await pipeReader.ReadAsync(ct);
                 }
-                catch (Exception)
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
-
-                    throw;
+                    // throw in case of timeout
+                    throw new RespProtocolException("Connecten timed out waiting for complete command");
                 }
+
                 ReadOnlySequence<byte> buffer = result.Buffer;
 
                 while (TryParseOne(ref buffer, out var command))
                 {
-                    // simple printing at this stage
-                    PrintRespValue(command);
+                    var response = executor.Execute(command);
+                    RespWriter.Write(response, pipeWriter);
+
+                    // pushes data into pipe
+                    await pipeWriter.FlushAsync();
                 }
 
-                reader.AdvanceTo(buffer.Start, buffer.End);
+                pipeReader.AdvanceTo(buffer.Start, buffer.End);
 
                 if (result.IsCompleted)
                 {
@@ -46,7 +53,8 @@ namespace InMemoryDatabase.Handlers
             }
 
             // tells pipe that we are done reading, should release all resources it holds
-            await reader.CompleteAsync();
+            await pipeReader.CompleteAsync();
+            await pipeWriter.CompleteAsync();
         }
 
         private static bool TryParseOne(ref ReadOnlySequence<byte> buffer, out RespValue command)
