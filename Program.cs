@@ -11,4 +11,3 @@ Console.CancelKeyPress += (_, e) =>
 var server = new RespServer(6380);
 
 await server.RunAsync(cts.Token);
-
