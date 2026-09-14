@@ -4,7 +4,6 @@ using InMemoryDatabase.Parser.Enums;
 using InMemoryDatabase.Parser.Models;
 using System.Buffers;
 using System.IO.Pipelines;
-using System.Reflection.PortableExecutable;
 
 namespace InMemoryDatabase.Handlers
 {
