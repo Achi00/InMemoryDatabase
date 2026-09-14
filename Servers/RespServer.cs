@@ -1,4 +1,5 @@
-﻿using InMemoryDatabase.Handlers;
+﻿using InMemoryDatabase.Exucutors;
+using InMemoryDatabase.Handlers;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
@@ -8,10 +9,12 @@ namespace InMemoryDatabase.Servers
     internal class RespServer
     {
         private readonly TcpListener _listener;
+        private readonly RespCommandExecutor _executor;
 
-        public RespServer(int port)
+        public RespServer(int port, RespCommandExecutor executor)
         {
             _listener = new TcpListener(IPAddress.Loopback, port);
+            _executor = executor;
         }
 
         public async Task RunAsync(CancellationToken ct)
@@ -33,10 +36,11 @@ namespace InMemoryDatabase.Servers
             {
                 NetworkStream stream = client.GetStream();
                 PipeReader reader = PipeReader.Create(stream);
+                PipeWriter writer = PipeWriter.Create(stream);
 
                 try
                 {
-                    await RespConnectionHandler.ProcessAsync(reader, ct);
+                    await RespConnectionHandler.ProcessAsync(reader, writer, _executor, ct);
                 }
                 catch (Exception ex)
                 {
