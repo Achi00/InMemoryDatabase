@@ -16,5 +16,10 @@ namespace InMemoryDatabase.Storage
         {
             return _data.TryGetValue(key, out value);
         }
+
+        public bool Delete(string key)
+        {
+            return _data.TryRemove(key, out _);
+        }
     }
 }
