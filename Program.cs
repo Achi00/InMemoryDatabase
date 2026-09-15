@@ -12,6 +12,8 @@ builder.Services.AddSingleton<RespStore>();
 
 builder.Services.AddSingleton<ICommandHandler, SetCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, GetCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, DelCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, ExistsCommandHandler>();
 
 
 builder.Services.AddSingleton<RespCommandExecutor>();
