@@ -6,7 +6,7 @@ using System.Net.Sockets;
 
 namespace InMemoryDatabase.Servers
 {
-    internal class RespServer
+    public class RespServer
     {
         private readonly TcpListener _listener;
         private readonly RespCommandExecutor _executor;

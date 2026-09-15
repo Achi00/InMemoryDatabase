@@ -1,9 +1,20 @@
-﻿using InMemoryDatabase.Exucutors;
+﻿using InMemoryDatabase.Commands;
+using InMemoryDatabase.Commands.Handlers;
+using InMemoryDatabase.Exucutors;
 using InMemoryDatabase.Servers;
 using InMemoryDatabase.Storage;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-var store = new RespStore();
-var executor = new RespCommandExecutor(store);
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddSingleton<RespStore>();
+
+builder.Services.AddSingleton<ICommandHandler, SetCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, GetCommandHandler>();
+
+
+builder.Services.AddSingleton<RespCommandExecutor>();
 
 var cts = new CancellationTokenSource();
 
@@ -13,6 +24,10 @@ Console.CancelKeyPress += (_, e) =>
     cts.Cancel();
 };
 
-var server = new RespServer(6380, executor);
+builder.Services.AddSingleton<RespServer>(sp =>
+    new RespServer(6380, sp.GetRequiredService<RespCommandExecutor>()));
 
-await server.RunAsync(cts.Token);
+builder.Services.AddHostedService<RespHostedService>();
+
+var host = builder.Build();
+await host.RunAsync();
