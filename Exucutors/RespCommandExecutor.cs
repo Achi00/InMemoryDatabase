@@ -1,4 +1,5 @@
-﻿using InMemoryDatabase.Parser.Enums;
+﻿using InMemoryDatabase.Commands;
+using InMemoryDatabase.Parser.Enums;
 using InMemoryDatabase.Parser.Models;
 using InMemoryDatabase.Storage;
 
@@ -6,11 +7,11 @@ namespace InMemoryDatabase.Exucutors
 {
     public class RespCommandExecutor
     {
-        private readonly RespStore _store;
+        private readonly Dictionary<string, ICommandHandler> _handlers;
 
-        public RespCommandExecutor(RespStore store)
+        public RespCommandExecutor(IEnumerable<ICommandHandler> handlers)
         {
-            _store = store;
+            _handlers = handlers.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
         }
 
         public RespValue Execute(RespValue command)
@@ -21,37 +22,7 @@ namespace InMemoryDatabase.Exucutors
             RespValue[] parts = command.TypeArray;
             string name = parts[0].TypeString!.ToUpperInvariant();
 
-            return name switch
-            {
-                "PING" => RespValue.SimpleString("PONG"),
-                "SET" => HandleSet(parts),
-                "GET" => HandleGet(parts),
-                _ => RespValue.Error($"ERR unknown command '{name}'")
-            };
-        }
-
-        private RespValue HandleSet(RespValue[] parts)
-        {
-            if (parts.Length != 3)
-            {
-                return RespValue.Error("ERR wrong number of arguments for 'set' command");
-            }
-
-            string key = parts[1].TypeString!;
-            _store.Set(key, RespValue.BulkString(parts[2].TypeString!));
-            
-            return RespValue.SimpleString("OK");
-        }
-
-        private RespValue HandleGet(RespValue[] parts)
-        {
-            if (parts.Length != 2)
-            {
-                return RespValue.Error("ERR wrong number of arguments for 'get' command");
-            }
-
-            string key = parts[1].TypeString!;
-            return _store.TryGet(key, out RespValue value) ? value : RespValue.Null;
+            return _handlers.TryGetValue(name, out var handler) ? handler.Execute(parts) : RespValue.Error($"ERR unknown command '{name}'");
         }
     }
 }
