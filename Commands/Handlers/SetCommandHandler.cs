@@ -3,7 +3,7 @@ using InMemoryDatabase.Storage;
 
 namespace InMemoryDatabase.Commands.Handlers
 {
-    internal class SetCommandHandler : ICommandHandler
+    public sealed class SetCommandHandler : ICommandHandler
     {
         private readonly RespStore _store;
 

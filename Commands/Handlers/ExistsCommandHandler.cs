@@ -3,7 +3,7 @@ using InMemoryDatabase.Storage;
 
 namespace InMemoryDatabase.Commands.Handlers
 {
-    public class ExistsCommandHandler : ICommandHandler
+    public sealed class ExistsCommandHandler : ICommandHandler
     {
         private readonly RespStore _store;
         public string Name => "EXISTS";

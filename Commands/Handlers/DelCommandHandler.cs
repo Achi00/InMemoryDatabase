@@ -3,7 +3,7 @@ using InMemoryDatabase.Storage;
 
 namespace InMemoryDatabase.Commands.Handlers
 {
-    public class DelCommandHandler : ICommandHandler
+    public sealed class DelCommandHandler : ICommandHandler
     {
         private readonly RespStore _store;
         public string Name => "DEL";

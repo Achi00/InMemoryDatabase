@@ -22,11 +22,12 @@ namespace InMemoryDatabase.Exucutors
                 return RespValue.Error("ERR invalid command format");
             }
 
-            // index 0 reads command only
-            RespValue[] parts = command.TypeArray;
-            string name = parts[0].TypeString!;
+            var parts = command.TypeArray;
+            // strip command name in dispatcher before passing to executors, in this level its done only once
+            var name = parts[0].TypeString!.ToUpperInvariant();
+            var args = parts[1..];
 
-            return _handlers.TryGetValue(name, out var handler) ? handler.Execute(parts) : RespValue.Error($"ERR unknown command '{name}'");
+            return _handlers.TryGetValue(name, out var handler) ? handler.Execute(args) : RespValue.Error($"ERR unknown command '{name}'");
         }
     }
 }
