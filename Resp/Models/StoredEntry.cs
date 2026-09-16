@@ -3,6 +3,7 @@
 namespace InMemoryDatabase.Resp.Models
 {
     // storage which holds respvalue + datetime for TTL adn expiration
+    // readonly struct avoids heap allocation other than dictionary's own storage
     public readonly struct StoredEntry
     {
         public RespValue Value { get; }

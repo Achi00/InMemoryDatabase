@@ -1,20 +1,37 @@
 ﻿using InMemoryDatabase.Parser.Models;
+using InMemoryDatabase.Resp.Models;
 using System.Collections.Concurrent;
 
 namespace InMemoryDatabase.Storage
 {
     public class RespStore
     {
-        private readonly ConcurrentDictionary<string, RespValue> _data = new();
+        private readonly ConcurrentDictionary<string, StoredEntry> _data = new();
 
-        public void Set(string key, RespValue value)
+        // dictionary value StoredEntry = RespValue + DateTime metadata
+        public void Set(string key, RespValue value, DateTimeOffset? expiresAt = null)
         {
-            _data[key] = value; 
+            _data[key] = new StoredEntry(value, expiresAt);
         }
 
+        // checks if expired, lazy eviction strategy
         public bool TryGet(string key, out RespValue value)
         {
-            return _data.TryGetValue(key, out value);
+            if (_data.TryGetValue(key, out StoredEntry entry))
+            {
+                if (entry.IsExpired)
+                {
+                    _data.TryGetValue(key, out _);
+                    value = default;
+                    return false;
+                }
+
+                value = entry.Value;
+                return true;
+            }
+
+            value = default;
+            return false;
         }
 
         public bool Delete(string key)
