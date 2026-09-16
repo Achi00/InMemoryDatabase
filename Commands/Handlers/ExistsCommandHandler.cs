@@ -21,7 +21,7 @@ namespace InMemoryDatabase.Commands.Handlers
             }
 
             int count = 0;
-            for (int i = 0; i < args.Length; i++)
+            for (int i = 1; i < args.Length; i++)
             {
                 if (_store.TryGet(args[i].TypeString!, out _))
                 {

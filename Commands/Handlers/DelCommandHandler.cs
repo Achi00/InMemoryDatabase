@@ -22,7 +22,7 @@ namespace InMemoryDatabase.Commands.Handlers
 
             int deleted = 0;
 
-            for (int i = 0; i < args.Length; i++)
+            for (int i = 1; i < args.Length; i++)
             {
                 if (_store.Delete(args[i].TypeString!))
                 {

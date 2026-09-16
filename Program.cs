@@ -18,14 +18,6 @@ builder.Services.AddSingleton<ICommandHandler, ExistsCommandHandler>();
 
 builder.Services.AddSingleton<RespCommandExecutor>();
 
-var cts = new CancellationTokenSource();
-
-Console.CancelKeyPress += (_, e) =>
-{
-    e.Cancel = true;
-    cts.Cancel();
-};
-
 builder.Services.AddSingleton<RespServer>(sp =>
     new RespServer(6380, sp.GetRequiredService<RespCommandExecutor>()));
 
