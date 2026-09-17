@@ -51,5 +51,24 @@ namespace InMemoryDatabase.Storage
             _data[key] = new StoredEntry(entry.Value, expiresAt);
             return true;
         }
+
+        internal long GetTtlSeconds(string key)
+        {
+            if (!_data.TryGetValue(key, out StoredEntry entry) || entry.IsExpired)
+            {
+                // does not exists or expired
+                return -2;
+            }
+
+            if (!entry.IsExpired)
+            {
+                // exists, not expired
+                return -1;
+            }
+
+            double remaining = (entry.ExpiresAt.Value - DateTimeOffset.UtcNow).TotalSeconds;
+
+            return Math.Max(0, (long)remaining);
+        }
     }
 }
