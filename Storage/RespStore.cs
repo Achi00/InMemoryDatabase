@@ -16,6 +16,7 @@ namespace InMemoryDatabase.Storage
 
         // checks if expired, lazy eviction strategy, only remove when convenient, reduce cpu overhead
         // expired key value pair is removed when accessed
+        // TODO: add worker later to clean old expired data, if those not accessed they will sit in memory forever
         public bool TryGet(string key, out RespValue value)
         {
             if (_data.TryGetValue(key, out StoredEntry entry))
@@ -38,6 +39,17 @@ namespace InMemoryDatabase.Storage
         public bool Delete(string key)
         {
             return _data.TryRemove(key, out _);
+        }
+
+        public bool SetExpiry(string key, DateTimeOffset expiresAt)
+        {
+            if (!_data.TryGetValue(key, out StoredEntry entry))
+            {
+                return false;
+            }
+
+            _data[key] = new StoredEntry(entry.Value, expiresAt);
+            return true;
         }
     }
 }
