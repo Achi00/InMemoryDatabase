@@ -43,13 +43,22 @@ namespace InMemoryDatabase.Storage
 
         public bool SetExpiry(string key, DateTimeOffset expiresAt)
         {
-            if (!_data.TryGetValue(key, out StoredEntry entry))
+            while (true)
             {
-                return false;
-            }
+                if (!_data.TryGetValue(key, out StoredEntry current) || current.IsExpired)
+                {
+                    // key does not exists or is expired, no race conditions!!
+                    return false;
+                }
 
-            _data[key] = new StoredEntry(entry.Value, expiresAt);
-            return true;
+                var updated = new StoredEntry(current.Value, expiresAt);
+
+                if (_data.TryUpdate(key, updated, current))
+                {
+                    // if current was still current at the moment of the swap
+                    return true;
+                }
+            }
         }
 
         internal long GetTtlSeconds(string key)
