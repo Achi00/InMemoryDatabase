@@ -24,5 +24,15 @@ namespace InMemoryDatabase.Parser.Models
         public static RespValue NullBulkString() => new(RespValueType.Null);
 
         public static RespValue Null { get; } = new(RespValueType.Null);
+
+        // overriding default methods because it will be used for TryUpdate dict check which needs comparing two StoredEntry values
+        public bool Equals(RespValue other) =>
+            Type == other.Type &&
+            TypeString == other.TypeString &&
+            TypeInteger == other.TypeInteger &&
+            (TypeArray == other.TypeArray || (TypeArray != null && other.TypeArray != null && TypeArray.SequenceEqual(other.TypeArray)));
+
+        public override bool Equals(object? obj) => obj is RespValue other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Type, TypeString, TypeInteger);
     }
 }
