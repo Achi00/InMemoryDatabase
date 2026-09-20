@@ -3,26 +3,26 @@ using InMemoryDatabase.Storage;
 
 namespace InMemoryDatabase.Commands.Handlers
 {
-    public sealed class IncrCommandHandler : ICommandHandler
+    public sealed class DecrCommandHandler : ICommandHandler
     {
         private readonly RespStore _store;
-        public string Name => "INCR";
+        public string Name => "DECR";
 
-        public IncrCommandHandler(RespStore store)
+        public DecrCommandHandler(RespStore store)
         {
             _store = store;
         }
+
         public RespValue Execute(RespValue[] args)
         {
             if (args.Length != 1)
             {
-                return RespValue.Error("ERR wrong number of arguments for 'incr' command");
+                return RespValue.Error("ERR wrong number of arguments for 'decr' command");
             }
 
             string key = args[0].TypeString!;
 
-            // try to parse key as integer and increment its value
-            if (!_store.TryIncrement(key, delta: 1, out long newValue, out string? error))
+            if (_store.TryDecrement(key, delta: 1, out long newValue, out string? error))
             {
                 return RespValue.Error(error!);
             }

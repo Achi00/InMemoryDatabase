@@ -132,5 +132,10 @@ namespace InMemoryDatabase.Storage
                 }
             }
         }
+
+        internal bool TryDecrement(string key, int delta, out long newValue, out string? error)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
