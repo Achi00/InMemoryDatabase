@@ -18,6 +18,7 @@ builder.Services.AddSingleton<ICommandHandler, PingCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, ExpireCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, TtlCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, IncrCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, DecrCommandHandler>();
 
 
 builder.Services.AddSingleton<RespCommandExecutor>();
