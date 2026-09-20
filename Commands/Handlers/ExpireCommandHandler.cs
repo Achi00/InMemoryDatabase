@@ -17,14 +17,14 @@ namespace InMemoryDatabase.Commands.Handlers
 
         public RespValue Execute(RespValue[] args)
         {
-            if (args.Length != 3)
+            if (args.Length != 2)
             {
                 return RespValue.Error("ERR wrong number of arguments for 'expire' command");
             }
 
-            string key = args[1].TypeString!;
+            string key = args[0].TypeString!;
 
-            if (!Utf8Parser.TryParse(Encoding.UTF8.GetBytes(args[2].TypeString!), out int seconds, out _))
+            if (!Utf8Parser.TryParse(Encoding.UTF8.GetBytes(args[1].TypeString!), out int seconds, out _))
             {
                 return RespValue.Error("ERR value is not an integer or out of range");
             }

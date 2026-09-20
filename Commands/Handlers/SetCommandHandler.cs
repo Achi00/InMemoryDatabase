@@ -15,13 +15,13 @@ namespace InMemoryDatabase.Commands.Handlers
 
         public RespValue Execute(RespValue[] args)
         {
-            if (args.Length != 3)
+            if (args.Length != 2)
             {
                 return RespValue.Error("ERR wrong number of arguments for 'set' command");
             }
 
-            string key = args[1].TypeString!;
-            _store.Set(key, RespValue.BulkString(args[2].TypeString!));
+            string key = args[0].TypeString!;
+            _store.Set(key, RespValue.BulkString(args[1].TypeString!));
 
             return RespValue.SimpleString("OK");
         }

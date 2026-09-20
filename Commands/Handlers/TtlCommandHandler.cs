@@ -15,12 +15,12 @@ namespace InMemoryDatabase.Commands.Handlers
 
         public RespValue Execute(RespValue[] args)
         {
-            if (args.Length != 2)
+            if (args.Length != 1)
             {
                 return RespValue.Error("ERR wrong number of arguments for 'ttl' command");
             }
 
-            string key = args[1].TypeString!;
+            string key = args[0].TypeString!;
             long ttlSeconds = _store.GetTtlSeconds(key);
 
             return RespValue.Integer(ttlSeconds);
