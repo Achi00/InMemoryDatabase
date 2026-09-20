@@ -15,15 +15,15 @@ namespace InMemoryDatabase.Commands.Handlers
 
         public RespValue Execute(RespValue[] args)
         {
-            if (args.Length < 2)
+            if (args.Length < 1)
             {
                 return RespValue.Error("ERR wrong number of arguments for 'del' command");
             }
 
             int deleted = 0;
 
-            // start at index 1, 0 is command itself
-            for (int i = 1; i < args.Length; i++)
+            // no need to start from index 1, all element is key now
+            for (int i = 0; i < args.Length; i++)
             {
                 if (_store.Delete(args[i].TypeString!))
                 {

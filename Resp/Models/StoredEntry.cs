@@ -17,7 +17,7 @@ namespace InMemoryDatabase.Resp.Models
 
         public bool IsExpired => ExpiresAt.HasValue && ExpiresAt.Value <= DateTimeOffset.UtcNow;
 
-        // relies on RespValue's own equality, if not defined should fall back to reflection-based struct comparison by default, maybe slower!!
+        // relies on RespValue's own equality, if not defined should fall back to reflection-based struct comparison by default, reflection based is slower!!
         public bool Equals(StoredEntry other) => ExpiresAt == other.ExpiresAt && Value.Equals(other.Value);
 
         public override bool Equals(object? obj) => obj is StoredEntry other && Equals(other);
