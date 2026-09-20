@@ -21,8 +21,8 @@ namespace InMemoryDatabase.Commands.Handlers
             }
 
             int count = 0;
-            // start at index 1, 0 is command itself
-            for (int i = 1; i < args.Length; i++)
+            // no need to start from index 1, all element is key now
+            for (int i = 0; i < args.Length; i++)
             {
                 if (_store.TryGet(args[i].TypeString!, out _))
                 {
