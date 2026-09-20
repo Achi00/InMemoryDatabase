@@ -22,7 +22,7 @@ namespace InMemoryDatabase.Commands.Handlers
 
             string key = args[0].TypeString!;
 
-            if (_store.TryDecrement(key, delta: 1, out long newValue, out string? error))
+            if (_store.TryDecrement(key, delta: -1, out long newValue, out string? error))
             {
                 return RespValue.Error(error!);
             }

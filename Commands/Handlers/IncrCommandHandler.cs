@@ -22,7 +22,7 @@ namespace InMemoryDatabase.Commands.Handlers
             string key = args[0].TypeString!;
 
             // try to parse key as integer and increment its value
-            if (!_store.TryIncrement(key, delta: -1, out long newValue, out string? error))
+            if (!_store.TryIncrement(key, delta: 1, out long newValue, out string? error))
             {
                 return RespValue.Error(error!);
             }
