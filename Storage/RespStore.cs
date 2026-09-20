@@ -69,7 +69,7 @@ namespace InMemoryDatabase.Storage
                 return -2;
             }
 
-            if (!entry.IsExpired)
+            if (entry.ExpiresAt is null)
             {
                 // exists, not expired
                 return -1;
