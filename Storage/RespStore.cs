@@ -81,7 +81,7 @@ namespace InMemoryDatabase.Storage
             return Math.Max(0, (long)remaining);
         }
 
-        public bool TryIncrement(string key, int delta, out long newValue, out string? error)
+        public bool TryIncrement(string key, long delta, out long newValue, out string? error)
         {
             while (true)
             {
