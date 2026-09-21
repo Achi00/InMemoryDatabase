@@ -19,6 +19,8 @@ builder.Services.AddSingleton<ICommandHandler, ExpireCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, TtlCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, IncrCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, DecrCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, DecrByCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, IncrByCommandHandler>();
 
 
 builder.Services.AddSingleton<RespCommandExecutor>();
