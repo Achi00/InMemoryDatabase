@@ -132,50 +132,5 @@ namespace InMemoryDatabase.Storage
                 }
             }
         }
-
-        internal bool TryDecrement(string key, int delta, out long newValue, out string? error)
-        {
-            while (true)
-            {
-                bool existed = _data.TryGetValue(key, out StoredEntry current);
-
-                if (!existed || current.IsExpired)
-                {
-                    // missing or expired key behaves as if it was 0
-                    current = new StoredEntry(RespValue.BulkString("0"), null);
-                }
-
-                if (current.Value.Type != RespValueType.BulkString || !long.TryParse(current.Value.TypeString, out long currentNum))
-                {
-                    newValue = 0;
-                    error = "ERR value is not an integer or is out of range";
-                    return false;
-                }
-
-                try
-                {
-                    long candidate = checked(currentNum - delta);
-
-                    var updated = new StoredEntry(RespValue.BulkString(candidate.ToString()), current.ExpiresAt);
-
-                    bool swapped = existed
-                        ? _data.TryUpdate(key, updated, current)
-                        : _data.TryAdd(key, updated);
-
-                    if (swapped)
-                    {
-                        newValue = candidate;
-                        error = null;
-                        return true;
-                    }
-                }
-                catch (OverflowException)
-                {
-                    newValue = 0;
-                    error = "ERR value is not an integer or is out of range";
-                    return false;
-                }
-            }
-        }
     }
 }
