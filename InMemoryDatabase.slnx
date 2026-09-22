@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="../InMemoryDatabase.Tests/InMemoryDatabase.Tests.csproj" Id="46559aef-41f7-4423-af8a-c3ceb4308e19" />
   <Project Path="InMemoryDatabase.csproj" />
 </Solution>
