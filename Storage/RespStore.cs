@@ -97,7 +97,7 @@ namespace InMemoryDatabase.Storage
                 if (current.Value.Type != RespValueType.BulkString || !long.TryParse(current.Value.TypeString, out long currentNum))
                 {
                     newValue = 0;
-                    error = "ERR value is not an integer or is out of range";
+                    error = "ERR value is not an integer or out of range";
                     return false;
                 }
 
@@ -127,7 +127,7 @@ namespace InMemoryDatabase.Storage
                 catch (OverflowException)
                 {
                     newValue = 0;
-                    error = "ERR value is not an integer or is out of range";
+                    error = "ERR value is not an integer or out of range";
                     return false;
                 }
             }
