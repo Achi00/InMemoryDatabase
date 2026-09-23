@@ -62,5 +62,17 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal(":1\r\n", delResponse);
         }
+
+        [Fact]
+        public async Task Del_NonExistentKey_ReturnsNullValue()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("*2\r\n$3\r\nDEL\r\n$3\r\nfoo\r\n");
+
+            string delResponse = await client.ReadRawAsync();
+
+            Assert.Equal(":0\r\n", delResponse);
+        }
     }
 }
