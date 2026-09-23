@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using System.Text;
 
-namespace InMemoryDatabase.Tests
+namespace InMemoryDatabase.Tests.Setup
 {
     public class RespTestClient : IAsyncDisposable
     {
