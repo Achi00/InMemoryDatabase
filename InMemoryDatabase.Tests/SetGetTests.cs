@@ -74,5 +74,21 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal(":0\r\n", delResponse);
         }
+
+        [Fact]
+        public async Task Exists_ExistingKey_ReturnsCount()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n");
+            // drain pipe for next bytes
+            var setResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("*2\r\n$6\r\nEXISTS\r\n$3\r\nfoo\r\n");
+
+            string existsResponse = await client.ReadRawAsync();
+
+            Assert.Equal(":1\r\n", existsResponse);
+        }
     }
 }
