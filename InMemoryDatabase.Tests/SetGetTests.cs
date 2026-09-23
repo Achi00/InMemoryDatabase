@@ -4,6 +4,7 @@ namespace InMemoryDatabase.Tests
 {
     public class SetGetTests : IAsyncLifetime
     {
+        // no shared state between tests, controller by IAsyncLifetime
         private TestServerFixture _fixture;
 
         public Task InitializeAsync()
@@ -44,6 +45,22 @@ namespace InMemoryDatabase.Tests
             string getResponse = await client.ReadRawAsync();
 
             Assert.Equal("$-1\r\n", getResponse);
+        }
+
+        [Fact]
+        public async Task Del_ExistingKey_RemovesItAndReturnsCount()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n");
+            // drain pipe for next bytes
+            var setResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("*2\r\n$3\r\nDEL\r\n$3\r\nfoo\r\n");
+
+            string delResponse = await client.ReadRawAsync();
+
+            Assert.Equal(":1\r\n", delResponse);
         }
     }
 }
