@@ -33,5 +33,17 @@ namespace InMemoryDatabase.Tests
             Assert.Equal("+OK\r\n", setResponse);
             Assert.Equal("$3\r\nbar\r\n", getResponse);
         }
+
+        [Fact]
+        public async Task Get_NonExistentKey_ReturnsNullBulkString()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("*2\r\n$3\r\nGET\r\n$7\r\nmissing\r\n");
+
+            string getResponse = await client.ReadRawAsync();
+
+            Assert.Equal("$-1\r\n", getResponse);
+        }
     }
 }
