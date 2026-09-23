@@ -90,5 +90,17 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal(":1\r\n", existsResponse);
         }
+
+        [Fact]
+        public async Task Pong_ShouldReturn_Ping()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("*1\r\n$4\r\nPING\r\n");
+
+            string pingResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+PONG\r\n", pingResponse);
+        }
     }
 }
