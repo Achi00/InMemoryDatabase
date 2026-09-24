@@ -22,7 +22,7 @@ namespace InMemoryDatabase.Tests
             await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
 
             // set integer value
-            await client.SendAsync("*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\n10\r\n");
+            await client.SendAsync("*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$2\r\n10\r\n");
             var setResponse = await client.ReadRawAsync();
 
             // increment by 10
@@ -30,7 +30,7 @@ namespace InMemoryDatabase.Tests
 
             string response = await client.ReadRawAsync();
 
-            Assert.Equal(":OK\r\n", response);
+            Assert.Equal(":11\r\n", response);
         }
     }
 }
