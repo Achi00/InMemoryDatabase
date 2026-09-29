@@ -32,5 +32,21 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal(":11\r\n", response);
         }
+
+        [Fact]
+        public async Task Incr_WhenKeyNotExists_ShouldCreateNew()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            // no set, straight increment
+            await client.SendAsync("*2\r\n$4\r\nINCR\r\n$3\r\nfoo\r\n");
+            string incrResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("*2\r\n$3\r\nGET\r\n$3\r\nfoo\r\n");
+            string getResponse = await client.ReadRawAsync();
+
+            Assert.Equal(":1\r\n", incrResponse);
+            Assert.Equal("$1\r\n1\r\n", getResponse);
+        }
     }
 }

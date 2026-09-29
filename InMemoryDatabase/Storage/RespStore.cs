@@ -111,7 +111,7 @@ namespace InMemoryDatabase.Storage
 
                     bool swapped = existed 
                         ? _data.TryUpdate(key, updated, current) 
-                        // key did not exist, add nes instead of update
+                        // key did not exist, add new instead
                         : _data.TryAdd(key, updated);
 
                     if (swapped)
