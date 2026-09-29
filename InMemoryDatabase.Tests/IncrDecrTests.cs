@@ -82,5 +82,36 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal(":9\r\n", response);
         }
+
+        [Fact]
+        public async Task Decr_WhenKeyExistsAndIsNotInteger_ShouldReturnErr()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$2\r\nhi\r\n"); ;
+            string setResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("*2\r\n$4\r\nDECR\r\n$3\r\nfoo\r\n");
+            string decrResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setResponse);
+            Assert.Equal("-ERR value is not an integer or out of range\r\n", decrResponse);
+        }
+
+        [Fact]
+        public async Task Decr_WhenKeyNotExists_ShouldCreateNew()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            // no set, straight increment
+            await client.SendAsync("*2\r\n$4\r\nDECR\r\n$3\r\nfoo\r\n");
+            string decrResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("*2\r\n$3\r\nGET\r\n$3\r\nfoo\r\n");
+            string getResponse = await client.ReadRawAsync();
+
+            Assert.Equal(":-1\r\n", decrResponse);
+            Assert.Equal("$2\r\n-1\r\n", getResponse);
+        }
     }
 }
