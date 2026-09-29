@@ -16,6 +16,7 @@ namespace InMemoryDatabase.Tests
             await _fixture.DisposeAsync();
         }
 
+        // increments
         [Fact]
         public async Task Incr_WhenKeyExistsAndIsInteger_ShouldReturnInteger()
         {
@@ -34,6 +35,21 @@ namespace InMemoryDatabase.Tests
         }
 
         [Fact]
+        public async Task Incr_WhenKeyExistsAndIsNotInteger_ShouldReturnErr()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$2\r\nhi\r\n"); ;
+            string setResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("*2\r\n$4\r\nINCR\r\n$3\r\nfoo\r\n");
+            string incrResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setResponse);
+            Assert.Equal("-ERR value is not an integer or out of range\r\n", incrResponse);
+        }
+
+        [Fact]
         public async Task Incr_WhenKeyNotExists_ShouldCreateNew()
         {
             await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
@@ -47,6 +63,24 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal(":1\r\n", incrResponse);
             Assert.Equal("$1\r\n1\r\n", getResponse);
+        }
+
+        // decrements
+        [Fact]
+        public async Task Decr_WhenKeyExistsAndIsInteger_ShouldReturnInteger()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            // set integer value
+            await client.SendAsync("*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$2\r\n10\r\n");
+            var setResponse = await client.ReadRawAsync();
+
+            // decrement by 10
+            await client.SendAsync("*2\r\n$4\r\nDECR\r\n$3\r\nfoo\r\n");
+
+            string response = await client.ReadRawAsync();
+
+            Assert.Equal(":9\r\n", response);
         }
     }
 }
