@@ -65,9 +65,6 @@ namespace InMemoryDatabase.Resp.Pasrser
             };
         }
 
-        // is used to parse RESP inline commands, human writable
-
-
         // zero allication array parser
         private static RespValue ParseArray(ref SequenceReader<byte> reader, int depth)
         {

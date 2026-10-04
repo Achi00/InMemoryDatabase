@@ -63,7 +63,8 @@ namespace InMemoryDatabase.Handlers
 
             try
             {
-                command = RespParser.ParseValue(ref reader, depth: 0);
+                // reader is passed to orcestrator method which will decite if this command needs inline parsing or is raw array of bytes
+                command = RespParser.ParseCommand(ref reader);
                 // consumes already seccessfully parsed data
                 buffer = buffer.Slice(reader.Position);
 
