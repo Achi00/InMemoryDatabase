@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Text;
 
-namespace InMemoryDatabase.Parser
+namespace InMemoryDatabase.Resp.Pasrser
 {
     public static class RespParser
     {
@@ -178,5 +178,28 @@ namespace InMemoryDatabase.Parser
             line.IsSingleSegment
                 ? Encoding.UTF8.GetString(line.FirstSpan)
                 : Encoding.UTF8.GetString(line.ToArray());
+
+        // parse inline commands, is seperated from byte array read which is raw resp commands
+        private static RespValue ParseInclineCommand(ref SequenceReader<byte> reader)
+        {
+            var line = ReadLine(ref reader);
+
+            // check reader value segments
+            string text = line.IsSingleSegment
+                ? Encoding.UTF8.GetString(line.FirstSpan)
+                : Encoding.UTF8.GetString(line.ToArray());
+
+            // TODO: search for better solution!!!!
+            string[] tokens = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            var items = new RespValue[tokens.Length];
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                items[i] = RespValue.BulkString(tokens[i]);
+            }
+            
+            return RespValue.Array(items);
+        }
+
     }
 }
