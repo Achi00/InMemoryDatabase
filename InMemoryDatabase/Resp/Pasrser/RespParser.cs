@@ -20,7 +20,25 @@ namespace InMemoryDatabase.Resp.Pasrser
         // ReadLine's lenght cap, 64 KB
         private const int MAX_INLINE_LINE_LENGHT = 64 * 1024;
 
-        // is used to parse RESP array form
+        // main orcestraitor
+        public static RespValue ParseCommand(ref SequenceReader<byte> reader)
+        {
+            if (!reader.TryPeek(out byte first))
+            {
+                throw new RespIncompleteDataException();
+            }
+
+            if (first == (byte)'*')
+            {
+                // consume the '*' by moving cursor, same as ParseValue already does for the type byte
+                reader.Advance(1); 
+                return ParseArray(ref reader, depth: 0);
+            }
+
+            return ParseInlineCommand(ref reader);
+        }
+
+        // is used to parse RESP array form, used in ParseArray recursivly in case we have raw array bytes which has depth in it, no inline commands
         public static RespValue ParseValue(ref SequenceReader<byte> reader, int depth)
         {
             if (depth > MAX_NESTING_DEPTH)
