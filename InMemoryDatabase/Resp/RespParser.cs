@@ -192,10 +192,8 @@ namespace InMemoryDatabase.Resp
         // parse inline commands, is seperated from byte array read which is raw resp commands
         private static RespValue ParseInlineCommand(ref SequenceReader<byte> reader)
         {
-            var line = ReadLine(ref reader);
-
             // check reader value segments
-            string text = LineToString(ReadLine(ref reader)); ;
+            string text = LineToString(ReadLine(ref reader));
 
             // TODO: search for better solution!!!!
             string[] tokens = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);

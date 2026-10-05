@@ -113,7 +113,7 @@ namespace InMemoryDatabase.Tests
             // drain pipe for next bytes
             var setResponse = await client.ReadRawAsync();
 
-            Assert.Equal("+OK\r\n$3\r\nbar\r\n", setResponse);
+            Assert.Equal("+OK\r\n", setResponse);
         }
     }
 }
