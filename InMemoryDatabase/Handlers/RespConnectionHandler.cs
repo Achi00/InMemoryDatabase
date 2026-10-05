@@ -3,7 +3,7 @@ using InMemoryDatabase.Exucutors;
 using InMemoryDatabase.Parser.Enums;
 using InMemoryDatabase.Parser.Models;
 using InMemoryDatabase.Resp;
-using InMemoryDatabase.Resp.Pasrser;
+using InMemoryDatabase.Resp.Parser;
 using System.Buffers;
 using System.IO.Pipelines;
 
@@ -77,36 +77,6 @@ namespace InMemoryDatabase.Handlers
                 return false;
             }
             // RespProtocolException not cought here, it should bubble up and kill connection
-        }
-
-        // print in console
-        private static void PrintRespValue(RespValue value, int indent = 0)
-        {
-            string pad = new string(' ', indent * 2);
-
-            switch (value.Type)
-            {
-                case RespValueType.SimpleString:
-                    Console.WriteLine($"{pad}SimpleString: {value.TypeString}");
-                    break;
-                case RespValueType.Error:
-                    Console.WriteLine($"{pad}Error: {value.TypeString}");
-                    break;
-                case RespValueType.Integer:
-                    Console.WriteLine($"{pad}Integer: {value.TypeInteger}");
-                    break;
-                case RespValueType.BulkString:
-                    Console.WriteLine($"{pad}BulkString: {value.TypeString}");
-                    break;
-                case RespValueType.Null:
-                    Console.WriteLine($"{pad}Null");
-                    break;
-                case RespValueType.Array:
-                    Console.WriteLine($"{pad}Array[{value.TypeArray.Length}]:");
-                    foreach (var item in value.TypeArray)
-                        PrintRespValue(item, indent + 1);
-                    break;
-            }
         }
     }
 }
