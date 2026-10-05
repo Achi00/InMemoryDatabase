@@ -131,5 +131,16 @@ namespace InMemoryDatabase.Tests
             Assert.Equal("+OK\r\n", setResponse);
             Assert.Equal("$3\r\nbar\r\n", getResponse);
         }
+
+        [Fact]
+        public async Task InlineCommand_Get_KeyNotExists_ShouldReturnNullValue()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("GET foo\r\n");
+            var getResponse = await client.ReadRawAsync();
+
+            Assert.Equal("$-1\r\n", getResponse);
+        }
     }
 }
