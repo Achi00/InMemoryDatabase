@@ -109,11 +109,27 @@ namespace InMemoryDatabase.Tests
         {
             await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
 
-            await client.SendAsync("SET foo bar\r\nGET foo\r\n");
+            await client.SendAsync("SET foo bar\r\n");
             // drain pipe for next bytes
             var setResponse = await client.ReadRawAsync();
 
             Assert.Equal("+OK\r\n", setResponse);
+        }
+
+        [Fact]
+        public async Task InlineCommand_Get_ShouldReturnOk()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            // drain pipe for next bytes
+            var setResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("GET foo\r\n");
+            var getResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setResponse);
+            Assert.Equal("$3\r\nbar\r\n", getResponse);
         }
     }
 }
