@@ -1,10 +1,10 @@
 ﻿using InMemoryDatabase.Exceptions;
-using InMemoryDatabase.Parser.Models;
+using InMemoryDatabase.Resp.Models;
 using System.Buffers;
 using System.Buffers.Text;
 using System.Text;
 
-namespace InMemoryDatabase.Resp.Parser
+namespace InMemoryDatabase.Resp
 {
     public static class RespParser
     {

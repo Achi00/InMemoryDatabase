@@ -102,5 +102,18 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal("+PONG\r\n", pingResponse);
         }
+
+        // inline command tests
+        [Fact]
+        public async Task InLineCommand_Set_ShouldReturn_Ok()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\nGET foo\r\n");
+            // drain pipe for next bytes
+            var setResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n$3\r\nbar\r\n", setResponse);
+        }
     }
 }

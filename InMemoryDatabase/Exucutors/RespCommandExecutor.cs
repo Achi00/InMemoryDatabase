@@ -1,6 +1,6 @@
 ﻿using InMemoryDatabase.Commands;
 using InMemoryDatabase.Parser.Enums;
-using InMemoryDatabase.Parser.Models;
+using InMemoryDatabase.Resp.Models;
 
 namespace InMemoryDatabase.Exucutors
 {
@@ -17,7 +17,7 @@ namespace InMemoryDatabase.Exucutors
 
         public RespValue Execute(RespValue command)
         {
-            if (command.Type != RespValueType.Array || command.TypeArray!.Length == 0)
+            if (command.Type != RespValueType.Array || command.TypeArray is not { Length: > 0 })
             {
                 return RespValue.Error("ERR invalid command format");
             }
