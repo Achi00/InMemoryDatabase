@@ -35,12 +35,17 @@ namespace InMemoryDatabase.Commands.Handlers
                 // check if it containd additional set argument
                 if (option.Equals("EX", StringComparison.OrdinalIgnoreCase) || option.Equals("PX", StringComparison.OrdinalIgnoreCase))
                 {
+                    /*
+                     * expiresAt should be null, if not invalid syntax, else if it is not null it alsready picked up other EX/PX argument 
+                     * and command contains multiple of them which is invalid
+                     * + 1 nothing should be after EX/PX
+                    */
                     if (expiresAt is not null || i + 1 >= args.Length)
                     {
                         return RespValue.Error("ERR syntax error");
                     }
 
-                    // consumes ++i number which follows EX/PX, so it does not read it as option
+                    // consumes ++i number which follows EX/PX and defines amount value
                     if (!long.TryParse(args[++i].TypeString, out var amount))
                     {
                         return RespValue.Error("ERR value is not an integer or out of range");

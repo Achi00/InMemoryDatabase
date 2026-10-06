@@ -21,6 +21,7 @@ namespace InMemoryDatabase.Storage
                 return true;
             }
 
+            // loops in case of race confition and value change, if updated first and then lookup with prev value, now it will look up again and get updated value
             while (true)
             {
                 bool present = _data.TryGetValue(key, out var current);
