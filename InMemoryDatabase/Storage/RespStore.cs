@@ -1,6 +1,5 @@
 ﻿using InMemoryDatabase.Parser.Enums;
 using InMemoryDatabase.Resp.Models;
-using InMemoryDatabase.Resp.Models;
 using System.Collections.Concurrent;
 
 namespace InMemoryDatabase.Storage
@@ -18,7 +17,7 @@ namespace InMemoryDatabase.Storage
         // checks if expired, lazy eviction strategy, only remove when convenient, reduce cpu overhead
         // expired key value pair is removed when accessed
         // TODO: add worker later to clean old expired data, if those not accessed they will sit in memory forever
-        public bool TryGet(string key, out RespValue value)
+        internal bool TryGet(string key, out RespValue value)
         {
             if (_data.TryGetValue(key, out StoredEntry entry))
             {
@@ -37,12 +36,12 @@ namespace InMemoryDatabase.Storage
             return false;
         }
 
-        public bool Delete(string key)
+        internal bool Delete(string key)
         {
             return _data.TryRemove(key, out _);
         }
 
-        public bool SetExpiry(string key, DateTimeOffset expiresAt)
+        internal bool SetExpiry(string key, DateTimeOffset expiresAt)
         {
             while (true)
             {
@@ -62,7 +61,7 @@ namespace InMemoryDatabase.Storage
             }
         }
 
-        public long GetTtlSeconds(string key)
+        internal long GetTtlSeconds(string key)
         {
             if (!_data.TryGetValue(key, out StoredEntry entry) || entry.IsExpired)
             {
@@ -81,7 +80,7 @@ namespace InMemoryDatabase.Storage
             return Math.Max(0, (long)remaining);
         }
 
-        public bool TryIncrement(string key, long delta, out long newValue, out string? error)
+        internal bool TryIncrement(string key, long delta, out long newValue, out string? error)
         {
             while (true)
             {
