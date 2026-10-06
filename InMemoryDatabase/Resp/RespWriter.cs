@@ -1,5 +1,5 @@
 ﻿using InMemoryDatabase.Parser.Enums;
-using InMemoryDatabase.Parser.Models;
+using InMemoryDatabase.Resp.Models;
 using System.Buffers;
 using System.Text;
 

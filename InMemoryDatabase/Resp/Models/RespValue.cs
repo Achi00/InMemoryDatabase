@@ -1,6 +1,6 @@
 ﻿using InMemoryDatabase.Parser.Enums;
 
-namespace InMemoryDatabase.Parser.Models
+namespace InMemoryDatabase.Resp.Models
 {
     public readonly struct RespValue
     {

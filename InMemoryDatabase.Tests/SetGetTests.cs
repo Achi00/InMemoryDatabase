@@ -102,5 +102,45 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal("+PONG\r\n", pingResponse);
         }
+
+        // inline command tests
+        [Fact]
+        public async Task InLineCommand_Set_ShouldReturn_Ok()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            // drain pipe for next bytes
+            var setResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setResponse);
+        }
+
+        [Fact]
+        public async Task InlineCommand_Get_ShouldReturnOk()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            // drain pipe for next bytes
+            var setResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("GET foo\r\n");
+            var getResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setResponse);
+            Assert.Equal("$3\r\nbar\r\n", getResponse);
+        }
+
+        [Fact]
+        public async Task InlineCommand_Get_KeyNotExists_ShouldReturnNullValue()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("GET foo\r\n");
+            var getResponse = await client.ReadRawAsync();
+
+            Assert.Equal("$-1\r\n", getResponse);
+        }
     }
 }

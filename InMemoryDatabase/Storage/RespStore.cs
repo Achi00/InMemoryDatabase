@@ -1,5 +1,5 @@
 ﻿using InMemoryDatabase.Parser.Enums;
-using InMemoryDatabase.Parser.Models;
+using InMemoryDatabase.Resp.Enums;
 using InMemoryDatabase.Resp.Models;
 using System.Collections.Concurrent;
 
@@ -10,15 +10,55 @@ namespace InMemoryDatabase.Storage
         private readonly ConcurrentDictionary<string, StoredEntry> _data = new();
 
         // dictionary value StoredEntry = RespValue + DateTime metadata
-        public void Set(string key, RespValue value, DateTimeOffset? expiresAt = null)
+        public bool Set(string key, RespValue value, DateTimeOffset? expiresAt, SetCondition condition)
         {
-            _data[key] = new StoredEntry(value, expiresAt);
+            var entry = new StoredEntry(value, expiresAt);
+
+            // if condition state does not contains any additional params about ttl or expiry
+            if (condition == SetCondition.Always)
+            {
+                _data[key] = entry;
+                return true;
+            }
+
+            while (true)
+            {
+                bool present = _data.TryGetValue(key, out var current);
+                // still chack if current value is expires or not
+                bool exists = present && !current.IsExpired;
+                // check counter intuitive states on key
+                if (condition == SetCondition.IfNotExists && exists)
+                {
+                    return false;
+                }
+                if (condition == SetCondition.IfExists && !exists)
+                {
+                    return false;
+                }
+
+                bool written;
+                if (present)
+                {
+                    // key exists in dictionary, life for xx or expider for nx
+                    written = _data.TryUpdate(key, entry, current);
+                }
+                else
+                {
+                    // key does not exists, insert only if still non existant
+                    written = _data.TryAdd(key, entry);
+                }
+
+                if (written)
+                {
+                    return true;
+                }
+            }
         }
 
         // checks if expired, lazy eviction strategy, only remove when convenient, reduce cpu overhead
         // expired key value pair is removed when accessed
         // TODO: add worker later to clean old expired data, if those not accessed they will sit in memory forever
-        public bool TryGet(string key, out RespValue value)
+        internal bool TryGet(string key, out RespValue value)
         {
             if (_data.TryGetValue(key, out StoredEntry entry))
             {
@@ -37,12 +77,12 @@ namespace InMemoryDatabase.Storage
             return false;
         }
 
-        public bool Delete(string key)
+        internal bool Delete(string key)
         {
             return _data.TryRemove(key, out _);
         }
 
-        public bool SetExpiry(string key, DateTimeOffset expiresAt)
+        internal bool SetExpiry(string key, DateTimeOffset expiresAt)
         {
             while (true)
             {
@@ -62,7 +102,7 @@ namespace InMemoryDatabase.Storage
             }
         }
 
-        public long GetTtlSeconds(string key)
+        internal long GetTtlSeconds(string key)
         {
             if (!_data.TryGetValue(key, out StoredEntry entry) || entry.IsExpired)
             {
@@ -81,7 +121,7 @@ namespace InMemoryDatabase.Storage
             return Math.Max(0, (long)remaining);
         }
 
-        public bool TryIncrement(string key, long delta, out long newValue, out string? error)
+        internal bool TryIncrement(string key, long delta, out long newValue, out string? error)
         {
             while (true)
             {

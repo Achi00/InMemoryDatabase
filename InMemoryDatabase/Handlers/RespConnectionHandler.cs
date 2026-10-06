@@ -1,11 +1,11 @@
 ﻿using InMemoryDatabase.Exceptions;
 using InMemoryDatabase.Exucutors;
-using InMemoryDatabase.Parser;
 using InMemoryDatabase.Parser.Enums;
-using InMemoryDatabase.Parser.Models;
+using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Resp;
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Text;
 
 namespace InMemoryDatabase.Handlers
 {
@@ -25,7 +25,8 @@ namespace InMemoryDatabase.Handlers
 
                 try
                 {
-                    result = await pipeReader.ReadAsync(ct);
+                    result = await pipeReader.ReadAsync(timeoutCts.Token);
+                    Console.WriteLine($"Received {result.Buffer.Length} bytes: {Convert.ToHexString(result.Buffer.ToArray())}");
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
@@ -37,6 +38,12 @@ namespace InMemoryDatabase.Handlers
 
                 while (TryParseOne(ref buffer, out var command))
                 {
+                    // check length and avoid NullReferenceException
+                    if (command.TypeArray is not { Length: > 0 })
+                    {
+                        continue;
+                    }
+                    Console.WriteLine($"Parsed array with {command.TypeArray?.Length} items");
                     var response = executor.Execute(command);
                     RespWriter.Write(response, pipeWriter);
 
@@ -60,10 +67,15 @@ namespace InMemoryDatabase.Handlers
         private static bool TryParseOne(ref ReadOnlySequence<byte> buffer, out RespValue command)
         {
             var reader = new SequenceReader<byte>(buffer);
-
+            // testing
+            //var reader = new SequenceReader<byte>(new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes("PING\r\n")));
+            //RespValue result = RespParser.ParseCommand(ref reader);
+            //PrintRespValue(result);
+            
             try
             {
-                command = RespParser.ParseValue(ref reader, depth: 0);
+                // reader is passed to orcestrator method which will decite if this command needs inline parsing or is raw array of bytes
+                command = RespParser.ParseCommand(ref reader);
                 // consumes already seccessfully parsed data
                 buffer = buffer.Slice(reader.Position);
 

@@ -1,10 +1,10 @@
 ﻿using InMemoryDatabase.Exceptions;
-using InMemoryDatabase.Parser.Models;
+using InMemoryDatabase.Resp.Models;
 using System.Buffers;
 using System.Buffers.Text;
 using System.Text;
 
-namespace InMemoryDatabase.Parser
+namespace InMemoryDatabase.Resp
 {
     public static class RespParser
     {
@@ -18,9 +18,28 @@ namespace InMemoryDatabase.Parser
         private const int MAX_BULK_STRING_LENGTH = 512 * 1024 * 1024;
 
         // ReadLine's lenght cap, 64 KB
-        private const int MAX_INLINE_LINE_LENGHT = 64 * 1024;
+        private const int MAX_INLINE_LINE_LENGTH = 64 * 1024;
 
-        public static RespValue ParseValue(ref SequenceReader<byte> reader, int depth)
+        // main orcestraitor
+        public static RespValue ParseCommand(ref SequenceReader<byte> reader)
+        {
+            if (!reader.TryPeek(out byte first))
+            {
+                throw new RespIncompleteDataException();
+            }
+
+            if (first == (byte)'*')
+            {
+                // consume the '*' by moving cursor, same as ParseValue already does for the type byte
+                reader.Advance(1); 
+                return ParseArray(ref reader, depth: 0);
+            }
+
+            return ParseInlineCommand(ref reader);
+        }
+
+        // is used to parse RESP array form, used in ParseArray recursivly in case we have raw array bytes which has depth in it, no inline commands
+        private static RespValue ParseValue(ref SequenceReader<byte> reader, int depth)
         {
             if (depth > MAX_NESTING_DEPTH)
             {
@@ -146,10 +165,6 @@ namespace InMemoryDatabase.Parser
             return RespValue.BulkString(value);
         }
 
-        private static RespValue ParseError(ref SequenceReader<byte> reader) => RespValue.Error(LineToString(ReadLine(ref reader)));
-
-        private static RespValue ParseSimpleString(ref SequenceReader<byte> reader) => RespValue.SimpleString(LineToString(ReadLine(ref reader)));
-
         // checking lines and segments
         private static ReadOnlySequence<byte> ReadLine(ref SequenceReader<byte> reader)
         {
@@ -157,7 +172,7 @@ namespace InMemoryDatabase.Parser
             if (!reader.TryReadTo(out ReadOnlySequence<byte> line, Crlf))
             {
                 // if buffered more than inline max cap and still no delimiters, dont wait for more data, avoiding potential abuse
-                if (reader.Remaining > MAX_INLINE_LINE_LENGHT)
+                if (reader.Remaining > MAX_INLINE_LINE_LENGTH)
                 {
                     throw new RespProtocolException("Line too long or missing terminator");
                 }
@@ -166,7 +181,7 @@ namespace InMemoryDatabase.Parser
             }
 
             // found delimiter but line before it was too long
-            if (line.Length > MAX_INLINE_LINE_LENGHT)
+            if (line.Length > MAX_INLINE_LINE_LENGTH)
             {
                 throw new RespProtocolException("Line too long");
             }
@@ -174,6 +189,25 @@ namespace InMemoryDatabase.Parser
             return line;
         }
 
+        // parse inline commands, is seperated from byte array read which is raw resp commands
+        private static RespValue ParseInlineCommand(ref SequenceReader<byte> reader)
+        {
+            // check reader value segments
+            string text = LineToString(ReadLine(ref reader));
+
+            // TODO: search for better solution!!!!
+            string[] tokens = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
+            var items = new RespValue[tokens.Length];
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                items[i] = RespValue.BulkString(tokens[i]);
+            }
+
+            return RespValue.Array(items);
+        }
+        private static RespValue ParseError(ref SequenceReader<byte> reader) => RespValue.Error(LineToString(ReadLine(ref reader)));
+        private static RespValue ParseSimpleString(ref SequenceReader<byte> reader) => RespValue.SimpleString(LineToString(ReadLine(ref reader)));
         private static string LineToString(ReadOnlySequence<byte> line) =>
             line.IsSingleSegment
                 ? Encoding.UTF8.GetString(line.FirstSpan)
