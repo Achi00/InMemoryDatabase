@@ -40,6 +40,7 @@ namespace InMemoryDatabase.Commands.Handlers
                         return RespValue.Error("ERR syntax error");
                     }
 
+                    // consumes ++i number which follows EX/PX, so it does not read it as option
                     if (!long.TryParse(args[++i].TypeString, out var amount))
                     {
                         return RespValue.Error("ERR value is not an integer or out of range");
@@ -55,7 +56,7 @@ namespace InMemoryDatabase.Commands.Handlers
 
                     try
                     {
-                        // 2 possible falies in amount, seconds or milliseconds
+                        // 2 possible values in amount, seconds or milliseconds
                         expiresAt = isSeconds
                             ? DateTimeOffset.UtcNow.AddSeconds(amount)
                             : DateTimeOffset.UtcNow.AddMilliseconds(amount);
@@ -66,8 +67,34 @@ namespace InMemoryDatabase.Commands.Handlers
                         return RespValue.Error("ERR invalid expire time in 'set' command");
                     }
                 }
+                else if (option.Equals("NX", StringComparison.OrdinalIgnoreCase))
+                {
+                    // condition of set command does not match argument
+                    if (condition != SetCondition.Always)
+                    {
+                        return RespValue.Error("ERR syntax error");
+                    }
+
+                    condition = SetCondition.IfNotExists;
+                }
+                else if (option.Equals("XX", StringComparison.OrdinalIgnoreCase))
+                {
+                    // condition of set command does not match argument
+                    if (condition != SetCondition.Always)
+                    {
+                        return RespValue.Error("ERR syntax error");
+                    }
+
+                    condition = SetCondition.IfExists;
+                }
+                else
+                {
+                    return RespValue.Error("ERR syntax error");
+                }
             }
-            return RespValue.SimpleString("OK");
+            bool written = _store.Set(key, RespValue.BulkString(value), expiresAt, condition);
+
+            return written ? RespValue.SimpleString("OK") : RespValue.Null;
         }
     }
 }
