@@ -1,4 +1,5 @@
-﻿using InMemoryDatabase.Resp.Models;
+﻿using InMemoryDatabase.Resp.Enums;
+using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Storage;
 
 namespace InMemoryDatabase.Commands.Handlers
@@ -21,8 +22,51 @@ namespace InMemoryDatabase.Commands.Handlers
             }
 
             string key = args[0].TypeString!;
-            _store.Set(key, RespValue.BulkString(args[1].TypeString!));
+            string value = args[1].TypeString!;
 
+            DateTimeOffset? expiresAt = null;
+            SetCondition condition = SetCondition.Always;
+
+            // 2 = skipping key value
+            for (int i = 2; i < args.Length; i++)
+            {
+                string option = args[i].TypeString!;
+
+                // check if it containd additional set argument
+                if (option.Equals("EX", StringComparison.OrdinalIgnoreCase) || option.Equals("PX", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (expiresAt is not null || i + 1 >= args.Length)
+                    {
+                        return RespValue.Error("ERR syntax error");
+                    }
+
+                    if (!long.TryParse(args[++i].TypeString, out var amount))
+                    {
+                        return RespValue.Error("ERR value is not an integer or out of range");
+                    }
+
+                    if (amount <= 0)
+                    {
+                        return RespValue.Error("ERR invalid expire time in 'set' command");
+                    }
+
+                    // EX seconds | PX milliseconds
+                    bool isSeconds = option.Equals("EX", StringComparison.OrdinalIgnoreCase);
+
+                    try
+                    {
+                        // 2 possible falies in amount, seconds or milliseconds
+                        expiresAt = isSeconds
+                            ? DateTimeOffset.UtcNow.AddSeconds(amount)
+                            : DateTimeOffset.UtcNow.AddMilliseconds(amount);
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        // past DateTimeOffset.MaxValue
+                        return RespValue.Error("ERR invalid expire time in 'set' command");
+                    }
+                }
+            }
             return RespValue.SimpleString("OK");
         }
     }
