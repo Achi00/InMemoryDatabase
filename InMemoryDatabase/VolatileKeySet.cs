@@ -15,9 +15,33 @@
                 {
                     return;
                 }
-                // if key does not exist store key and cound in 2 storages
+                // if key does not exist store key and count in 2 storages
                 _index[key] = _keys.Count;
                 _keys.Add(key);
+            }
+        }
+
+        public void Remove(string key)
+        {
+            lock (_lock)
+            {
+                // returns position of key in _keys array
+                if (!_index.Remove(key, out int position))
+                {
+                    return;
+                }
+
+                int last = _keys.Count - 1;
+
+                if (position != last)
+                {
+                    // move the last key into emply space, so removal will not shift the list
+                    string moved = _keys[last];
+                    _keys[position] = moved;
+                    _index[moved] = position;
+                }
+                // remove last element
+                _keys.RemoveAt(last);
             }
         }
     }
