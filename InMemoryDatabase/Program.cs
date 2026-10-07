@@ -1,4 +1,5 @@
-﻿using InMemoryDatabase.Commands;
+﻿using InMemoryDatabase.BackgroundServices;
+using InMemoryDatabase.Commands;
 using InMemoryDatabase.Commands.Handlers;
 using InMemoryDatabase.Exucutors;
 using InMemoryDatabase.Servers;
@@ -22,6 +23,8 @@ builder.Services.AddSingleton<ICommandHandler, DecrCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, DecrByCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, IncrByCommandHandler>();
 
+// TTL sampling bg service
+builder.Services.AddHostedService<ActiveExpiryService>();
 
 builder.Services.AddSingleton<RespCommandExecutor>();
 

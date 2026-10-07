@@ -1,4 +1,5 @@
 ﻿
+
 namespace InMemoryDatabase
 {
     internal sealed class VolatileKeySet
@@ -27,7 +28,7 @@ namespace InMemoryDatabase
         {
             lock (_lock)
             {
-                // returns position of key in _keys array
+                // returns position of element in _keys array from dictionary
                 if (!_index.Remove(key, out int position))
                 {
                     return;
@@ -35,14 +36,15 @@ namespace InMemoryDatabase
 
                 int last = _keys.Count - 1;
 
+                // if element to remove is not last swap places with last element, then remove
                 if (position != last)
                 {
-                    // move the last key into emply space, so removal will not shift the list
+                    // move the last key into currently removed key's space, so removal will not shift the list onlt last element will be removed
                     string moved = _keys[last];
                     _keys[position] = moved;
                     _index[moved] = position;
                 }
-                // remove last element
+                // remove last element which was switched instead of last one
                 _keys.RemoveAt(last);
             }
         }
@@ -59,6 +61,7 @@ namespace InMemoryDatabase
                 int count = Math.Min(destination.Length, _keys.Count);
                 for (int i = 0; i < count; i++)
                 {
+                    // get random key for sampling
                     destination[i] = _keys[Random.Shared.Next(_keys.Count)];
                 }
 

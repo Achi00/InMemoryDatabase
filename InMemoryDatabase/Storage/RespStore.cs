@@ -8,7 +8,9 @@ namespace InMemoryDatabase.Storage
     public class RespStore
     {
         private readonly ConcurrentDictionary<string, StoredEntry> _data = new();
+        // combines list and dictionary O(1) lookup with key + index
         private readonly VolatileKeySet _volatileKeySet = new();
+        private readonly string[] _sampleBuffer = new string[20];
 
         // dictionary value StoredEntry = RespValue + DateTime metadata
         public bool Set(string key, RespValue value, DateTimeOffset? expiresAt, SetCondition condition)
@@ -81,6 +83,34 @@ namespace InMemoryDatabase.Storage
 
             value = default;
             return false;
+        }
+
+        // checks small buffer of (20) elements to check there expiry status by key
+        // same key can be picked more than one, it will simply skip or clean it up
+        internal (int sampled, int expired) ExpireSample()
+        {
+            int count = _volatileKeySet.Sameple(_sampleBuffer);
+            int expired = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                string key = _sampleBuffer[i];
+
+                // key does not exists or no longer has TTL
+                if (!_data.TryGetValue(key, out var entry) || entry.ExpiresAt is null)
+                {
+                    _volatileKeySet.Remove(key);
+                    continue;
+                }
+
+                if (entry.IsExpired && _data.TryRemove(new KeyValuePair<string, StoredEntry>(key, entry)))
+                {
+                    expired++;
+                    _volatileKeySet.Remove(key);
+                }
+            }
+
+            return (count, expired);
         }
 
         internal bool Delete(string key)
