@@ -138,6 +138,7 @@ namespace InMemoryDatabase.Storage
 
                 if (_data.TryUpdate(key, updated, current))
                 {
+                    _volatileKeySet.Add(key);
                     // if current was still current at the moment of the swap
                     return true;
                 }

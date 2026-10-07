@@ -27,6 +27,7 @@ namespace InMemoryDatabase.BackgroundServices
         }
 
         // if none conditions met run loop again
+        // runs active sampling, samples random keys, which have TTL, deletes expired ones depending on conditions: space, time and ect
         private void RunCycle()
         {
             long deadline = Stopwatch.GetTimestamp() + CycleBudgetTicks;
