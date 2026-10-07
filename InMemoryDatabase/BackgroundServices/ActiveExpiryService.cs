@@ -17,6 +17,7 @@ namespace InMemoryDatabase.BackgroundServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // to keep steady time and not drift for overhead ms which might be ~2/3 ms
             using var timer = new PeriodicTimer(Interval);
 
             while (await timer.WaitForNextTickAsync(stoppingToken))
@@ -25,6 +26,7 @@ namespace InMemoryDatabase.BackgroundServices
             }
         }
 
+        // if none conditions met run loop again
         private void RunCycle()
         {
             long deadline = Stopwatch.GetTimestamp() + CycleBudgetTicks;

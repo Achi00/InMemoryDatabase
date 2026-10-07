@@ -52,8 +52,9 @@ namespace InMemoryDatabase.Storage
                     written = _data.TryAdd(key, entry);
                 }
 
-                if (written)
+                if (written && expiresAt is not null)
                 {
+                    _volatileKeySet.Add(key);
                     return true;
                 }
             }
@@ -115,7 +116,12 @@ namespace InMemoryDatabase.Storage
 
         internal bool Delete(string key)
         {
-            return _data.TryRemove(key, out _);
+            if (_data.TryRemove(key, out _))
+            {
+                _volatileKeySet.Remove(key);
+                return true;
+            }
+            return false;
         }
 
         internal bool SetExpiry(string key, DateTimeOffset expiresAt)
