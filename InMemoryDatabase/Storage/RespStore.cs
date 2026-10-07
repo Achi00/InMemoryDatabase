@@ -44,7 +44,7 @@ namespace InMemoryDatabase.Storage
                     // key exists in dictionary, life for xx or expider for nx
                     ? _data.TryUpdate(key, entry, current)
                     // key does not exists, insert only if still non existant
-                    : written = _data.TryAdd(key, entry);
+                    : _data.TryAdd(key, entry);
 
                 if (written)
                 {
@@ -63,7 +63,6 @@ namespace InMemoryDatabase.Storage
 
         // checks if expired, lazy eviction strategy, only remove when convenient, reduce cpu overhead
         // expired key value pair is removed when accessed
-        // TODO: add worker later to clean old expired data, if those not accessed they will sit in memory forever
         internal bool TryGet(string key, out RespValue value)
         {
             if (_data.TryGetValue(key, out StoredEntry entry))
