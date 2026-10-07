@@ -8,6 +8,7 @@ namespace InMemoryDatabase.Storage
     public class RespStore
     {
         private readonly ConcurrentDictionary<string, StoredEntry> _data = new();
+        private readonly VolatileKeySet _volatileKeySet = new();
 
         // dictionary value StoredEntry = RespValue + DateTime metadata
         public bool Set(string key, RespValue value, DateTimeOffset? expiresAt, SetCondition condition)
@@ -65,7 +66,11 @@ namespace InMemoryDatabase.Storage
             {
                 if (entry.IsExpired)
                 {
-                    _data.TryRemove(key, out _);
+                    if (_data.TryRemove(new KeyValuePair<string, StoredEntry>(key, entry)))
+                    {
+                        _volatileKeySet.Remove(key);
+                    }
+                    
                     value = default;
                     return false;
                 }
