@@ -40,21 +40,22 @@ namespace InMemoryDatabase.Storage
                     return false;
                 }
 
-                bool written;
-                if (present)
-                {
+                bool written = present
                     // key exists in dictionary, life for xx or expider for nx
-                    written = _data.TryUpdate(key, entry, current);
-                }
-                else
-                {
+                    ? _data.TryUpdate(key, entry, current)
                     // key does not exists, insert only if still non existant
-                    written = _data.TryAdd(key, entry);
-                }
+                    : written = _data.TryAdd(key, entry);
 
-                if (written && expiresAt is not null)
+                if (written)
                 {
-                    _volatileKeySet.Add(key);
+                    if (expiresAt is not null)
+                    {
+                        _volatileKeySet.Add(key);
+                    }
+                    else
+                    {
+                        _volatileKeySet.Remove(key);
+                    }
                     return true;
                 }
             }

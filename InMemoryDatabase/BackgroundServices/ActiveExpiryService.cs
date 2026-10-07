@@ -7,7 +7,7 @@ namespace InMemoryDatabase.BackgroundServices
     public sealed class ActiveExpiryService : BackgroundService
     {
         private static readonly TimeSpan Interval = TimeSpan.FromMilliseconds(100);
-        private static readonly long CycleBudgetTicks = Stopwatch.Frequency / 100;
+        private static readonly long CycleBudgetTicks = Stopwatch.Frequency / 100; // ~10 ms
         private readonly RespStore _store;
 
         public ActiveExpiryService(RespStore store)
