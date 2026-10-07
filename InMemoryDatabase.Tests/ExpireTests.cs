@@ -47,5 +47,24 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal(":0\r\n", response);
         }
+
+        // inline commands
+        [Fact]
+        public async Task Set_WithEx_TtlIsPositive()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar EX 10");
+            string setResult = await client.ReadRawAsync();
+            Assert.Equal("+OK\r\n", setResult);
+
+            await client.SendAsync("TTL foo");
+            string ttlResult = await client.ReadRawAsync();
+
+            string ttlText = ttlResult.TrimEnd('\r', '\n');
+            Assert.StartsWith(":", ttlText);
+            long ttl = long.Parse(ttlText[1..]);
+            Assert.InRange(ttl, 9, 10);
+        }
     }
 }
