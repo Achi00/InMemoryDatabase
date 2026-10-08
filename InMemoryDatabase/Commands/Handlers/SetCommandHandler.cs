@@ -16,7 +16,7 @@ namespace InMemoryDatabase.Commands.Handlers
 
         public RespValue Execute(RespValue[] args)
         {
-            if (args.Length != 2)
+            if (args.Length < 2)
             {
                 return RespValue.Error("ERR wrong number of arguments for 'set' command");
             }

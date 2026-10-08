@@ -54,11 +54,11 @@ namespace InMemoryDatabase.Tests
         {
             await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
 
-            await client.SendAsync("SET foo bar EX 10");
+            await client.SendAsync("SET foo bar EX 10\r\n");
             string setResult = await client.ReadRawAsync();
             Assert.Equal("+OK\r\n", setResult);
 
-            await client.SendAsync("TTL foo");
+            await client.SendAsync("TTL foo\r\n");
             string ttlResult = await client.ReadRawAsync();
 
             string ttlText = ttlResult.TrimEnd('\r', '\n');
