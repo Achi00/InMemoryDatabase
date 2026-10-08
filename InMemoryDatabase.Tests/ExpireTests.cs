@@ -92,7 +92,8 @@ namespace InMemoryDatabase.Tests
             await client.SendAsync("SET foo bar\r\n");
             string setResult = await client.ReadRawAsync();
             
-            await client.SendAsync("SET foo bar NX\r\n");
+            // non existing value set
+            await client.SendAsync("SET foo baz NX\r\n");
             string setNxResult = await client.ReadRawAsync();
 
             await client.SendAsync("GET foo\r\n");
@@ -118,6 +119,26 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal("+OK\r\n", setNxResult);
             Assert.Equal("$3\r\nbar\r\n", getResult);
+        }
+
+        [Fact]
+        public async Task Set_WithNX_KeyExpired()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar PX 100\r\n");
+            await Task.Delay(300);
+            string setPxResult = await client.ReadRawAsync();
+            // old key already expired, this should retuen OK
+            await client.SendAsync("SET foo baz NX\r\n");
+            string setNxResult = await client.ReadRawAsync();
+           
+            await client.SendAsync("GET foo\r\n");
+            string getResult = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setPxResult);
+            Assert.Equal("+OK\r\n", setNxResult);
+            Assert.Equal("$3\r\nbaz\r\n", getResult);
         }
     }
 }
