@@ -66,5 +66,22 @@ namespace InMemoryDatabase.Tests
             long ttl = long.Parse(ttlText[1..]);
             Assert.InRange(ttl, 9, 10);
         }
+
+
+        [Fact]
+        public async Task Set_WithPx_TtlIsPositive()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar PX 500\r\n");
+            string setResult = await client.ReadRawAsync();
+            // wait 1 sec
+            await Task.Delay(1000);
+
+            await client.SendAsync("GET foo\r\n");
+            string getResult = await client.ReadRawAsync();
+
+            Assert.Equal("$-1\r\n", getResult);
+        }
     }
 }
