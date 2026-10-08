@@ -140,5 +140,43 @@ namespace InMemoryDatabase.Tests
             Assert.Equal("+OK\r\n", setNxResult);
             Assert.Equal("$3\r\nbaz\r\n", getResult);
         }
+
+        [Fact]
+        public async Task Set_WithNX_KeyDeleted()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            await client.ReadRawAsync();
+
+            await client.SendAsync("DEL foo\r\n");
+            await client.ReadRawAsync();
+
+            await client.SendAsync("SET foo baz NX\r\n");
+            var NxResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", NxResponse);
+        }
+
+        [Fact]
+        public async Task Set_WithExAndNx_KEyNotExists()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar NX EX 10\r\n");
+
+            var nxExResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("TTL foo\r\n");
+
+            var ttlResponse = await client.ReadRawAsync();
+
+            string ttlText = ttlResponse.TrimEnd('\r', '\n');
+            Assert.StartsWith(":", ttlText);
+            long ttl = long.Parse(ttlText[1..]);
+
+            Assert.Equal("+OK\r\n", nxExResponse);
+            Assert.InRange(ttl, 9, 10);
+        }
     }
 }
