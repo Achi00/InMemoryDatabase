@@ -69,7 +69,7 @@ namespace InMemoryDatabase.Tests
 
 
         [Fact]
-        public async Task Set_WithPx_TtlIsPositive()
+        public async Task Set_WithPx_KeyExpires()
         {
             await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
 
@@ -82,6 +82,42 @@ namespace InMemoryDatabase.Tests
             string getResult = await client.ReadRawAsync();
 
             Assert.Equal("$-1\r\n", getResult);
+        }
+
+        [Fact]
+        public async Task Set_WithNx_KeyExists()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            string setResult = await client.ReadRawAsync();
+            
+            await client.SendAsync("SET foo bar NX\r\n");
+            string setNxResult = await client.ReadRawAsync();
+
+            await client.SendAsync("GET foo\r\n");
+            string getResult = await client.ReadRawAsync();
+
+
+            Assert.Equal("+OK\r\n", setResult);
+            Assert.Equal("$-1\r\n", setNxResult);
+            Assert.Equal("$3\r\nbar\r\n", getResult);
+        }
+
+        [Fact]
+        public async Task Set_WithNx_KeyNotExists()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+            
+            await client.SendAsync("SET foo bar NX\r\n");
+            string setNxResult = await client.ReadRawAsync();
+
+            await client.SendAsync("GET foo\r\n");
+            string getResult = await client.ReadRawAsync();
+
+
+            Assert.Equal("+OK\r\n", setNxResult);
+            Assert.Equal("$3\r\nbar\r\n", getResult);
         }
     }
 }
