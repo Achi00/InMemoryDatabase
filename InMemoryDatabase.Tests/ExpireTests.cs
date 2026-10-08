@@ -178,5 +178,47 @@ namespace InMemoryDatabase.Tests
             Assert.Equal("+OK\r\n", nxExResponse);
             Assert.InRange(ttl, 9, 10);
         }
+
+        [Fact]
+        public async Task Set_WithExAndNx_ShouldRefuseOriginalsChange()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            var setResponse = await client.ReadRawAsync();
+            // different value
+            await client.SendAsync("SET foo baz NX EX 5\r\n");
+            var SetNxExResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("TTL foo\r\n");
+            var ttlResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setResponse);
+            Assert.Equal("$-1\r\n", SetNxExResponse);
+            Assert.Equal(":-1\r\n", ttlResponse);
+        }
+
+        [Fact]
+        public async Task Set_WithExAndNx_ShouldRefuseOverwrite()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar EX 100 \r\n");
+            var setResponse = await client.ReadRawAsync();
+            // different value
+            await client.SendAsync("SET foo baz NX EX 5\r\n");
+            var SetNxExResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("TTL foo\r\n");
+            var ttlResponse = await client.ReadRawAsync();
+
+            string ttlText = ttlResponse.TrimEnd('\r', '\n');
+            Assert.StartsWith(":", ttlText);
+            long ttl = long.Parse(ttlText[1..]);
+
+            Assert.Equal("+OK\r\n", setResponse);
+            Assert.Equal("$-1\r\n", SetNxExResponse);
+            Assert.InRange(ttl, 90, 100);
+        }
     }
 }
