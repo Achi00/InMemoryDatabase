@@ -9,9 +9,9 @@ namespace InMemoryDatabase
         private readonly Dictionary<string, int> _index = new();
         private readonly object _lock = new object();
         private readonly Random _random;
-        public VolatileKeySet(int random)
+        public VolatileKeySet(Random? random = null)
         {
-            _random = new(random);
+            _random = random ?? Random.Shared;
         }
 
         // expose key counts for internal RespStore
@@ -72,8 +72,8 @@ namespace InMemoryDatabase
                 int count = Math.Min(destination.Length, _keys.Count);
                 for (int i = 0; i < count; i++)
                 {
-                    // get random key for sampling
-                    destination[i] = _keys[Random.Shared.Next(_keys.Count)];
+                    // get random key for sampling, should be in range of count!!
+                    destination[i] = _keys[_random.Next(_keys.Count)];
                 }
 
                 return count;
