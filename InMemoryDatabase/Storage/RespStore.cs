@@ -15,6 +15,9 @@ namespace InMemoryDatabase.Storage
         internal int PhysicalCount => _data.Count;
         internal int VolatileCount => _volatileKeySet.Count;
 
+        public RespStore() : this(new VolatileKeySet()) { }
+
+        // for tests
         internal RespStore(VolatileKeySet volatileKeySet)
         {
             _volatileKeySet = volatileKeySet;
@@ -98,7 +101,7 @@ namespace InMemoryDatabase.Storage
         // same key can be picked more than one, it will simply skip or clean it up
         internal (int sampled, int expired) ExpireSample()
         {
-            int count = _volatileKeySet.Sample(_sampleBuffer);
+            int count = _volatileKeySet.Sameple(_sampleBuffer);
             int expired = 0;
 
             for (int i = 0; i < count; i++)
