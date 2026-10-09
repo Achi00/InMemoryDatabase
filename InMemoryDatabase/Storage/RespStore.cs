@@ -12,6 +12,9 @@ namespace InMemoryDatabase.Storage
         private readonly VolatileKeySet _volatileKeySet = new();
         private readonly string[] _sampleBuffer = new string[20];
 
+        internal int PhysicalCount => _data.Count;
+        internal int VolatileCount => _volatileKeySet.Count;
+
         // dictionary value StoredEntry = RespValue + DateTime metadata
         public bool Set(string key, RespValue value, DateTimeOffset? expiresAt, SetCondition condition)
         {

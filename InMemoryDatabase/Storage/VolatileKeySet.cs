@@ -8,6 +8,17 @@ namespace InMemoryDatabase
         // key = position in _keys
         private readonly Dictionary<string, int> _index = new();
         private readonly object _lock = new object();
+        private readonly Random _random;
+        public VolatileKeySet(int random)
+        {
+            _random = new(random);
+        }
+
+        // expose key counts for internal RespStore
+        public int Count
+        {
+            get { lock (_lock) return _keys.Count; }
+        }
 
         public void Add(string key)
         {
