@@ -64,7 +64,7 @@ namespace InMemoryDatabase.Tests
         }
 
         [Fact]
-        public void SetExpiry_OnPermanentKey_StartsTrackingIt()
+        public void SetExpiry_OnPermanentKey_StartsTracking()
         {
             var store = new RespStore();
             // permanent key not tracked by VolatileKeySet
@@ -79,7 +79,7 @@ namespace InMemoryDatabase.Tests
         }
 
         [Fact]
-        public void SetExpiry_OnTrackedKey_StopsTrackingIt()
+        public void Set_WithoutExpiry_OnTrackedKey_StopsTracking()
         {
             var store = new RespStore();
             // permanent key not tracked by VolatileKeySet
@@ -91,16 +91,46 @@ namespace InMemoryDatabase.Tests
             Assert.True(result);
         }
         [Fact]
-        public void DelExpiry_OnTrackedKey_StopsTrackingIt()
+        public void Delete_OnTrackedKey_StopsTracking()
         {
             var store = new RespStore();
-            // permanent key not tracked by VolatileKeySet
+
             store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.Always);
             Assert.Equal(1, store.VolatileCount);
             
             bool result = store.Delete("foo");
             Assert.Equal(0, store.VolatileCount);
             Assert.True(result);
+        }
+
+        [Fact]
+        public void Set_NxRefused_DoesNotTrackKey()
+        {
+            var store = new RespStore();
+            store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            Assert.Equal(0, store.VolatileCount);
+
+            // NX with TTL, must be refused because foo exists
+            bool result = store.Set("foo", RespValue.BulkString("baz"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfNotExists);
+            Assert.False(result);
+            Assert.Equal(0, store.VolatileCount);
+            Assert.True(store.TryGet("foo", out var value));
+            Assert.Equal("bar", value.TypeString);
+        }
+
+        [Fact]
+        public void Set_XxOnExistingKey_WritesAndTracks()
+        {
+            var store = new RespStore();
+            store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            Assert.Equal(0, store.VolatileCount);
+
+            // XX with TTL, must be refused because foo exists
+            bool result = store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
+            Assert.True(result);
+            Assert.Equal(1, store.VolatileCount);
+            Assert.True(store.TryGet("foo", out var value));
+            Assert.Equal("bar", value.TypeString);
         }
 
         private static void RunSampler(RespStore store, int rounds = 1000)
