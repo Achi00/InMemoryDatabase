@@ -36,8 +36,31 @@ namespace InMemoryDatabase.Tests
 
             RunSampler(store);
 
-            Assert.Equal(100, store.PhysicalCount);
+            Assert.Equal(0, store.PhysicalCount);
             Assert.Equal(0, store.VolatileCount);
+        }
+
+        [Fact]
+        public async Task ExpireSample_KeepsPermanentAndUnexpiredKeys()
+        {
+            var store = new RespStore();
+
+            for (int i = 0; i < 50; i++)
+            {
+                store.Set($"expiring{i}", RespValue.BulkString("v"),
+                    DateTimeOffset.UtcNow.AddMilliseconds(50), SetCondition.Always);
+                store.Set($"permanent{i}", RespValue.BulkString("v"),
+                    null, SetCondition.Always);
+                store.Set($"later{i}", RespValue.BulkString("v"),
+                    DateTimeOffset.UtcNow.AddMinutes(5), SetCondition.Always);
+            }
+
+            await Task.Delay(150);
+
+            RunSampler(store);
+
+            Assert.Equal(100, store.PhysicalCount);
+            Assert.Equal(50, store.VolatileCount);
         }
 
         private static void RunSampler(RespStore store, int rounds = 1000)

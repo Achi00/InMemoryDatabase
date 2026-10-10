@@ -34,6 +34,8 @@ namespace InMemoryDatabase.Storage
             if (condition == SetCondition.Always)
             {
                 _data[key] = entry;
+                // include VolatileKeySet key tracking
+                TrackExpiry(key, expiresAt);
                 return true;
             }
 
@@ -61,14 +63,8 @@ namespace InMemoryDatabase.Storage
 
                 if (written)
                 {
-                    if (expiresAt is not null)
-                    {
-                        _volatileKeySet.Add(key);
-                    }
-                    else
-                    {
-                        _volatileKeySet.Remove(key);
-                    }
+                    // include VolatileKeySet key tracking
+                    TrackExpiry(key, expiresAt);
                     return true;
                 }
             }
@@ -237,6 +233,20 @@ namespace InMemoryDatabase.Storage
                     error = "ERR value is not an integer or out of range";
                     return false;
                 }
+            }
+        }
+
+        // include expiry tracking based on SetCondition value
+        private void TrackExpiry(string key, DateTimeOffset? expiresAt)
+        {
+            if (expiresAt is not null)
+            {
+                _volatileKeySet.Add(key);
+            }
+            else
+            {
+                // plain SET clears the TTL
+                _volatileKeySet.Remove(key);
             }
         }
     }
