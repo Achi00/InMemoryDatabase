@@ -1,6 +1,4 @@
-﻿
-
-namespace InMemoryDatabase
+﻿namespace InMemoryDatabase
 {
     internal sealed class VolatileKeySet
     {
@@ -11,7 +9,7 @@ namespace InMemoryDatabase
         private readonly Random _random;
         public VolatileKeySet(Random? random = null)
         {
-            _random = random ?? Random.Shared;
+            _random = random;
         }
 
         // expose key counts for internal RespStore
@@ -71,10 +69,14 @@ namespace InMemoryDatabase
                 }
 
                 int count = Math.Min(destination.Length, _keys.Count);
+
+                // method is locked, initializing random inside it to have safe execution context in this thread safe block
+                Random rand = _random ?? Random.Shared;
+
                 for (int i = 0; i < count; i++)
                 {
                     // get random key for sampling, should be in range of count!!
-                    destination[i] = _keys[_random.Next(_keys.Count)];
+                    destination[i] = _keys[rand.Next(_keys.Count)];
                 }
 
                 return count;
