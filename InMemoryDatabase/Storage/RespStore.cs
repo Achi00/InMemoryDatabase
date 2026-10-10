@@ -1,6 +1,7 @@
 ﻿using InMemoryDatabase.Parser.Enums;
 using InMemoryDatabase.Resp.Enums;
 using InMemoryDatabase.Resp.Models;
+using System.Buffers;
 using System.Collections.Concurrent;
 
 namespace InMemoryDatabase.Storage
@@ -10,7 +11,8 @@ namespace InMemoryDatabase.Storage
         private readonly ConcurrentDictionary<string, StoredEntry> _data = new();
         // combines list and dictionary O(1) lookup with key + index
         private readonly VolatileKeySet _volatileKeySet;
-        private readonly string[] _sampleBuffer = new string[20];
+        // used for array pool sizing, thread safe!!
+        private const int SampleSize = 20;
 
         internal int PhysicalCount => _data.Count;
         internal int VolatileCount => _volatileKeySet.Count;
@@ -101,28 +103,39 @@ namespace InMemoryDatabase.Storage
         // same key can be picked more than one, it will simply skip or clean it up
         internal (int sampled, int expired) ExpireSample()
         {
-            int count = _volatileKeySet.Sameple(_sampleBuffer);
-            int expired = 0;
-
-            for (int i = 0; i < count; i++)
+            // shared thread safe buffer, should call Rent in single place in lifetime of this chunk of mem
+            string[] buffer = ArrayPool<string>.Shared.Rent(SampleSize);
+            try
             {
-                string key = _sampleBuffer[i];
+                // passing shared array as pool instead of reference of array which will be shared and cause race condition
+                int count = _volatileKeySet.Sample(buffer.AsSpan(0, SampleSize));
+                int expired = 0;
 
-                // key does not exists or no longer has TTL
-                if (!_data.TryGetValue(key, out var entry) || entry.ExpiresAt is null)
+                for (int i = 0; i < count; i++)
                 {
-                    _volatileKeySet.Remove(key);
-                    continue;
+                    string key = buffer[i];
+
+                    // key does not exists or no longer has TTL
+                    if (!_data.TryGetValue(key, out var entry) || entry.ExpiresAt is null)
+                    {
+                        _volatileKeySet.Remove(key);
+                        continue;
+                    }
+
+                    if (entry.IsExpired && _data.TryRemove(new KeyValuePair<string, StoredEntry>(key, entry)))
+                    {
+                        expired++;
+                        _volatileKeySet.Remove(key);
+                    }
                 }
 
-                if (entry.IsExpired && _data.TryRemove(new KeyValuePair<string, StoredEntry>(key, entry)))
-                {
-                    expired++;
-                    _volatileKeySet.Remove(key);
-                }
+                return (count, expired);
             }
-
-            return (count, expired);
+            finally
+            {
+                // return array to pool
+                ArrayPool<string>.Shared.Return(buffer, clearArray: true);
+            }
         }
 
         internal bool Delete(string key)

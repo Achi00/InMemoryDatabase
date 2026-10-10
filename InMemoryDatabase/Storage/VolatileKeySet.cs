@@ -61,7 +61,7 @@ namespace InMemoryDatabase
         }
 
         // this method uses non thread safe new Random object, it is safe to use only if there is any thread safery precautions, in this case lock
-        public int Sameple(Span<string> destination)
+        public int Sample(Span<string> destination)
         {
             lock (_lock)
             {
