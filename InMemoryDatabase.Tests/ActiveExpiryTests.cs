@@ -84,8 +84,21 @@ namespace InMemoryDatabase.Tests
             var store = new RespStore();
             // permanent key not tracked by VolatileKeySet
             store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.Always);
+            Assert.Equal(1, store.VolatileCount);
 
             bool result = store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            Assert.Equal(0, store.VolatileCount);
+            Assert.True(result);
+        }
+        [Fact]
+        public void DelExpiry_OnTrackedKey_StopsTrackingIt()
+        {
+            var store = new RespStore();
+            // permanent key not tracked by VolatileKeySet
+            store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.Always);
+            Assert.Equal(1, store.VolatileCount);
+            
+            bool result = store.Delete("foo");
             Assert.Equal(0, store.VolatileCount);
             Assert.True(result);
         }
