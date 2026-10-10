@@ -117,6 +117,19 @@ namespace InMemoryDatabase.Tests
             Assert.True(store.TryGet("foo", out var value));
             Assert.Equal("bar", value.TypeString);
         }
+        [Fact]
+        public void Set_NxOnNotExistingKey_TrackKey()
+        {
+            var store = new RespStore();
+            Assert.Equal(0, store.VolatileCount);
+
+            // NX with TTL, must be tracked because foo not exists
+            bool result = store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfNotExists);
+            Assert.True(result);
+            Assert.Equal(1, store.VolatileCount);
+            Assert.True(store.TryGet("foo", out var value));
+            Assert.Equal("bar", value.TypeString);
+        }
 
         [Fact]
         public void Set_XxOnExistingKey_WritesAndTracks()
@@ -125,12 +138,26 @@ namespace InMemoryDatabase.Tests
             store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
             Assert.Equal(0, store.VolatileCount);
 
-            // XX with TTL, must be refused because foo exists
+            // XX with TTL, must be tracked because foo exists
             bool result = store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
             Assert.True(result);
             Assert.Equal(1, store.VolatileCount);
             Assert.True(store.TryGet("foo", out var value));
             Assert.Equal("bar", value.TypeString);
+        }
+
+        [Fact]
+        public void Set_XxOnMissingKey_DoesNotTrack()
+        {
+            var store = new RespStore();
+            //store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            Assert.Equal(0, store.VolatileCount);
+
+            // XX with TTL, must be refused because foo exists
+            bool result = store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
+            Assert.False(result);
+            Assert.Equal(0, store.VolatileCount);
+            Assert.False(store.TryGet("foo", out var _));
         }
 
         private static void RunSampler(RespStore store, int rounds = 1000)
