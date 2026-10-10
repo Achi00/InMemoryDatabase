@@ -63,6 +63,33 @@ namespace InMemoryDatabase.Tests
             Assert.Equal(50, store.VolatileCount);
         }
 
+        [Fact]
+        public void SetExpiry_OnPermanentKey_StartsTrackingIt()
+        {
+            var store = new RespStore();
+            // permanent key not tracked by VolatileKeySet
+            store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+
+            Assert.Equal(0, store.VolatileCount);
+
+            bool result = store.SetExpiry("foo", DateTimeOffset.UtcNow.AddMinutes(1));
+
+            Assert.True(result);
+            Assert.Equal(1, store.VolatileCount);
+        }
+
+        [Fact]
+        public void SetExpiry_OnTrackedKey_StopsTrackingIt()
+        {
+            var store = new RespStore();
+            // permanent key not tracked by VolatileKeySet
+            store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.Always);
+
+            bool result = store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            Assert.Equal(0, store.VolatileCount);
+            Assert.True(result);
+        }
+
         private static void RunSampler(RespStore store, int rounds = 1000)
         {
             for (int i = 0; i < rounds; i++)
