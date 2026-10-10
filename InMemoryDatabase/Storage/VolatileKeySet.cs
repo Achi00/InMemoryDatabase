@@ -9,7 +9,8 @@
         private readonly Random _random;
         public VolatileKeySet(Random? random = null)
         {
-            _random = random;
+            // Random.Shared thread safe its own, Random passed in by tests is not, so _random is only used inside lock
+            _random = random ?? Random.Shared;
         }
 
         // expose key counts for internal RespStore
@@ -70,13 +71,10 @@
 
                 int count = Math.Min(destination.Length, _keys.Count);
 
-                // method is locked, initializing random inside it to have safe execution context in this thread safe block
-                Random rand = _random ?? Random.Shared;
-
                 for (int i = 0; i < count; i++)
                 {
-                    // get random key for sampling, should be in range of count!!
-                    destination[i] = _keys[rand.Next(_keys.Count)];
+                    // pick any key in the set repeat "count" times
+                    destination[i] = _keys[_random.Next(_keys.Count)];
                 }
 
                 return count;
