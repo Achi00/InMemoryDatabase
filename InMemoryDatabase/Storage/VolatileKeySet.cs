@@ -80,5 +80,11 @@
                 return count;
             }
         }
+
+        // for test assertion
+        internal bool Contains(string key)
+        {
+            return _keys.Contains(key);
+        }
     }
 }
