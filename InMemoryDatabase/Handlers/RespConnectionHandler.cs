@@ -5,7 +5,6 @@ using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Resp;
 using System.Buffers;
 using System.IO.Pipelines;
-using System.Text;
 
 namespace InMemoryDatabase.Handlers
 {

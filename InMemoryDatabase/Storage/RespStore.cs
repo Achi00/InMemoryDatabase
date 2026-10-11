@@ -1,6 +1,7 @@
 ﻿using InMemoryDatabase.Parser.Enums;
 using InMemoryDatabase.Resp.Enums;
 using InMemoryDatabase.Resp.Models;
+using System.Buffers;
 using System.Collections.Concurrent;
 
 namespace InMemoryDatabase.Storage
@@ -8,6 +9,21 @@ namespace InMemoryDatabase.Storage
     public class RespStore
     {
         private readonly ConcurrentDictionary<string, StoredEntry> _data = new();
+        // combines list and dictionary O(1) lookup with key + index
+        private readonly VolatileKeySet _volatileKeySet;
+        // used for array pool sizing, thread safe!!
+        private const int SampleSize = 20;
+
+        internal int PhysicalCount => _data.Count;
+        internal int VolatileCount => _volatileKeySet.Count;
+
+        public RespStore() : this(new VolatileKeySet()) { }
+
+        // for tests
+        internal RespStore(VolatileKeySet volatileKeySet)
+        {
+            _volatileKeySet = volatileKeySet;
+        }
 
         // dictionary value StoredEntry = RespValue + DateTime metadata
         public bool Set(string key, RespValue value, DateTimeOffset? expiresAt, SetCondition condition)
@@ -18,9 +34,12 @@ namespace InMemoryDatabase.Storage
             if (condition == SetCondition.Always)
             {
                 _data[key] = entry;
+                // include VolatileKeySet key tracking
+                TrackExpiry(key, expiresAt);
                 return true;
             }
 
+            // loops in case of race confition and value change, if updated first and then lookup with prev value, now it will look up again and get updated value
             while (true)
             {
                 bool present = _data.TryGetValue(key, out var current);
@@ -36,20 +55,16 @@ namespace InMemoryDatabase.Storage
                     return false;
                 }
 
-                bool written;
-                if (present)
-                {
+                bool written = present
                     // key exists in dictionary, life for xx or expider for nx
-                    written = _data.TryUpdate(key, entry, current);
-                }
-                else
-                {
+                    ? _data.TryUpdate(key, entry, current)
                     // key does not exists, insert only if still non existant
-                    written = _data.TryAdd(key, entry);
-                }
+                    : _data.TryAdd(key, entry);
 
                 if (written)
                 {
+                    // include VolatileKeySet key tracking
+                    TrackExpiry(key, expiresAt);
                     return true;
                 }
             }
@@ -57,14 +72,17 @@ namespace InMemoryDatabase.Storage
 
         // checks if expired, lazy eviction strategy, only remove when convenient, reduce cpu overhead
         // expired key value pair is removed when accessed
-        // TODO: add worker later to clean old expired data, if those not accessed they will sit in memory forever
         internal bool TryGet(string key, out RespValue value)
         {
             if (_data.TryGetValue(key, out StoredEntry entry))
             {
                 if (entry.IsExpired)
                 {
-                    _data.TryRemove(key, out _);
+                    if (_data.TryRemove(new KeyValuePair<string, StoredEntry>(key, entry)))
+                    {
+                        _volatileKeySet.Remove(key);
+                    }
+                    
                     value = default;
                     return false;
                 }
@@ -77,9 +95,53 @@ namespace InMemoryDatabase.Storage
             return false;
         }
 
+        // checks small buffer of (20) elements to check there expiry status by key
+        // same key can be picked more than one, it will simply skip or clean it up
+        internal (int sampled, int expired) ExpireSample()
+        {
+            // shared thread safe buffer, should call Rent in single place in lifetime of this chunk of mem
+            string[] buffer = ArrayPool<string>.Shared.Rent(SampleSize);
+            try
+            {
+                // passing shared array as pool instead of reference of array which will be shared and cause race condition
+                int count = _volatileKeySet.Sample(buffer.AsSpan(0, SampleSize));
+                int expired = 0;
+
+                for (int i = 0; i < count; i++)
+                {
+                    string key = buffer[i];
+
+                    // key does not exists or no longer has TTL
+                    if (!_data.TryGetValue(key, out var entry) || entry.ExpiresAt is null)
+                    {
+                        _volatileKeySet.Remove(key);
+                        continue;
+                    }
+
+                    if (entry.IsExpired && _data.TryRemove(new KeyValuePair<string, StoredEntry>(key, entry)))
+                    {
+                        expired++;
+                        _volatileKeySet.Remove(key);
+                    }
+                }
+
+                return (count, expired);
+            }
+            finally
+            {
+                // return array to pool
+                ArrayPool<string>.Shared.Return(buffer, clearArray: true);
+            }
+        }
+
         internal bool Delete(string key)
         {
-            return _data.TryRemove(key, out _);
+            if (_data.TryRemove(key, out _))
+            {
+                _volatileKeySet.Remove(key);
+                return true;
+            }
+            return false;
         }
 
         internal bool SetExpiry(string key, DateTimeOffset expiresAt)
@@ -96,6 +158,7 @@ namespace InMemoryDatabase.Storage
 
                 if (_data.TryUpdate(key, updated, current))
                 {
+                    _volatileKeySet.Add(key);
                     // if current was still current at the moment of the swap
                     return true;
                 }
@@ -170,6 +233,20 @@ namespace InMemoryDatabase.Storage
                     error = "ERR value is not an integer or out of range";
                     return false;
                 }
+            }
+        }
+
+        // include expiry tracking based on SetCondition value
+        private void TrackExpiry(string key, DateTimeOffset? expiresAt)
+        {
+            if (expiresAt is not null)
+            {
+                _volatileKeySet.Add(key);
+            }
+            else
+            {
+                // plain SET clears the TTL
+                _volatileKeySet.Remove(key);
             }
         }
     }

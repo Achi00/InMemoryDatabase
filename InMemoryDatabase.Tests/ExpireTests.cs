@@ -47,5 +47,178 @@ namespace InMemoryDatabase.Tests
 
             Assert.Equal(":0\r\n", response);
         }
+
+        // inline commands
+        [Fact]
+        public async Task Set_WithEx_TtlIsPositive()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar EX 10\r\n");
+            string setResult = await client.ReadRawAsync();
+            Assert.Equal("+OK\r\n", setResult);
+
+            await client.SendAsync("TTL foo\r\n");
+            string ttlResult = await client.ReadRawAsync();
+
+            string ttlText = ttlResult.TrimEnd('\r', '\n');
+            Assert.StartsWith(":", ttlText);
+            long ttl = long.Parse(ttlText[1..]);
+            Assert.InRange(ttl, 9, 10);
+        }
+
+
+        [Fact]
+        public async Task Set_WithPx_KeyExpires()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar PX 500\r\n");
+            string setResult = await client.ReadRawAsync();
+            // wait 1 sec
+            await Task.Delay(1000);
+
+            await client.SendAsync("GET foo\r\n");
+            string getResult = await client.ReadRawAsync();
+
+            Assert.Equal("$-1\r\n", getResult);
+        }
+
+        [Fact]
+        public async Task Set_WithNx_KeyExists()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            string setResult = await client.ReadRawAsync();
+            
+            // non existing value set
+            await client.SendAsync("SET foo baz NX\r\n");
+            string setNxResult = await client.ReadRawAsync();
+
+            await client.SendAsync("GET foo\r\n");
+            string getResult = await client.ReadRawAsync();
+
+
+            Assert.Equal("+OK\r\n", setResult);
+            Assert.Equal("$-1\r\n", setNxResult);
+            Assert.Equal("$3\r\nbar\r\n", getResult);
+        }
+
+        [Fact]
+        public async Task Set_WithNx_KeyNotExists()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+            
+            await client.SendAsync("SET foo bar NX\r\n");
+            string setNxResult = await client.ReadRawAsync();
+
+            await client.SendAsync("GET foo\r\n");
+            string getResult = await client.ReadRawAsync();
+
+
+            Assert.Equal("+OK\r\n", setNxResult);
+            Assert.Equal("$3\r\nbar\r\n", getResult);
+        }
+
+        [Fact]
+        public async Task Set_WithNX_KeyExpired()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar PX 100\r\n");
+            await Task.Delay(300);
+            string setPxResult = await client.ReadRawAsync();
+            // old key already expired, this should retuen OK
+            await client.SendAsync("SET foo baz NX\r\n");
+            string setNxResult = await client.ReadRawAsync();
+           
+            await client.SendAsync("GET foo\r\n");
+            string getResult = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setPxResult);
+            Assert.Equal("+OK\r\n", setNxResult);
+            Assert.Equal("$3\r\nbaz\r\n", getResult);
+        }
+
+        [Fact]
+        public async Task Set_WithNX_KeyDeleted()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            await client.ReadRawAsync();
+
+            await client.SendAsync("DEL foo\r\n");
+            await client.ReadRawAsync();
+
+            await client.SendAsync("SET foo baz NX\r\n");
+            var NxResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", NxResponse);
+        }
+
+        [Fact]
+        public async Task Set_WithExAndNx_KEyNotExists()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar NX EX 10\r\n");
+
+            var nxExResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("TTL foo\r\n");
+
+            var ttlResponse = await client.ReadRawAsync();
+
+            string ttlText = ttlResponse.TrimEnd('\r', '\n');
+            Assert.StartsWith(":", ttlText);
+            long ttl = long.Parse(ttlText[1..]);
+
+            Assert.Equal("+OK\r\n", nxExResponse);
+            Assert.InRange(ttl, 9, 10);
+        }
+
+        [Fact]
+        public async Task Set_WithExAndNx_ShouldRefuseOriginalsChange()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar\r\n");
+            var setResponse = await client.ReadRawAsync();
+            // different value
+            await client.SendAsync("SET foo baz NX EX 5\r\n");
+            var SetNxExResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("TTL foo\r\n");
+            var ttlResponse = await client.ReadRawAsync();
+
+            Assert.Equal("+OK\r\n", setResponse);
+            Assert.Equal("$-1\r\n", SetNxExResponse);
+            Assert.Equal(":-1\r\n", ttlResponse);
+        }
+
+        [Fact]
+        public async Task Set_WithExAndNx_ShouldRefuseOverwrite()
+        {
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await client.SendAsync("SET foo bar EX 100 \r\n");
+            var setResponse = await client.ReadRawAsync();
+            // different value
+            await client.SendAsync("SET foo baz NX EX 5\r\n");
+            var SetNxExResponse = await client.ReadRawAsync();
+
+            await client.SendAsync("TTL foo\r\n");
+            var ttlResponse = await client.ReadRawAsync();
+
+            string ttlText = ttlResponse.TrimEnd('\r', '\n');
+            Assert.StartsWith(":", ttlText);
+            long ttl = long.Parse(ttlText[1..]);
+
+            Assert.Equal("+OK\r\n", setResponse);
+            Assert.Equal("$-1\r\n", SetNxExResponse);
+            Assert.InRange(ttl, 90, 100);
+        }
     }
 }
