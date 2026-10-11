@@ -40,6 +40,14 @@ namespace InMemoryDatabase.Servers
                 _ = connectionTask.ContinueWith(_ => _connections.TryRemove(id, out _));
             }
         }
+        // track state of all connections with deadline
+        internal async Task<bool> WaitForConnectionsAsync(TimeSpan timeout)
+        {
+            Task allDone = Task.WhenAll(_connections.Values);
+            Task first = await Task.WhenAny(allDone, Task.Delay(timeout));
+            // true = all finished in time, false = deadline hit
+            return first == allDone;   
+        }
 
         private async Task HandleClientAsync(TcpClient client, CancellationToken ct)
         {
