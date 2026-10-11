@@ -73,9 +73,64 @@
 
             Assert.Equal(2, _keySet.Count);
 
+            // remove last ket, no swap needed
             _keySet.Remove(key2);
             Assert.Equal(1, _keySet.Count);
 
+            Assert.True(_keySet.Contains(key1));
+            Assert.False(_keySet.Contains(key2));
+
+            // checks consistancy of keys
+            _keySet.CheckInvariant();
+
+        }
+
+        [Fact]
+        public void RemoveMiddleKey_ShouldSwap()
+        {
+            string key1 = "test";
+            string key2 = "test2";
+            string key3 = "test3";
+            _keySet.Add(key1);
+            _keySet.Add(key2);
+            _keySet.Add(key3);
+
+            Assert.Equal(3, _keySet.Count);
+
+            // remove last ket, no swap needed
+            _keySet.Remove(key2);
+            Assert.Equal(2, _keySet.Count);
+
+            Assert.True(_keySet.Contains(key1));
+            Assert.True(_keySet.Contains(key3));
+            Assert.False(_keySet.Contains(key2));
+
+            // checks consistancy of keys
+            _keySet.CheckInvariant();
+        }
+        [Fact]
+        public void RemoveFirstKey_ShouldSwap()
+        {
+            string key1 = "test";
+            string key2 = "test2";
+            string key3 = "test3";
+            _keySet.Add(key1);
+            _keySet.Add(key2);
+            _keySet.Add(key3);
+
+            Assert.Equal(3, _keySet.Count);
+
+            // remove last ket, no swap needed
+            _keySet.Remove(key1);
+            Assert.Equal(2, _keySet.Count);
+
+            Assert.False(_keySet.Contains(key1));
+
+            Assert.True(_keySet.Contains(key2));
+            Assert.True(_keySet.Contains(key3));
+
+            // checks consistancy of keys
+            _keySet.CheckInvariant();
         }
     }
 }
