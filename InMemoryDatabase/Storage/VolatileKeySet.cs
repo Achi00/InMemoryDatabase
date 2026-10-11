@@ -86,5 +86,31 @@
         {
             return _keys.Contains(key);
         }
+
+        internal void CheckInvariant()
+        {
+            lock (_lock)
+            {
+                if (_keys.Count != _index.Count)
+                {
+                    throw new InvalidOperationException($"List and Dictionary key counts does not match, List: {_keys.Count}, Dict: {_index.Count}");
+                }
+
+                for (int i = 0; i < _keys.Count; i++)
+                {
+                    string key = _keys[i];
+
+                    if (!_index.TryGetValue(key, out int position))
+                    {
+                        throw new InvalidOperationException($"Key '{key}' is in the list but not in the index");
+                    }
+
+                    if (position != i)
+                    {
+                        throw new InvalidOperationException("Key and index positions are missmatched");
+                    }
+                }
+            }
+        }
     }
 }
