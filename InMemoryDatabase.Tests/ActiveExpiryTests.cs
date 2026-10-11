@@ -1,24 +1,11 @@
 ﻿using InMemoryDatabase.Resp.Enums;
 using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Storage;
-using InMemoryDatabase.Tests.Setup;
 
 namespace InMemoryDatabase.Tests
 {
-    public class ActiveExpiryTests : IAsyncLifetime
+    public class ActiveExpiryTests
     {
-        private TestServerFixture _fixture;
-        public async Task DisposeAsync()
-        {
-            await _fixture.DisposeAsync();
-        }
-
-        public Task InitializeAsync()
-        {
-            _fixture = new TestServerFixture();
-            return Task.CompletedTask;
-        }
-
         [Fact]
         public async Task ExpireSample_RemovesExpiredKeysFromMemory()
         {
