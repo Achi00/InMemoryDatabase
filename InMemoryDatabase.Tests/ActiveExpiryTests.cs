@@ -118,7 +118,7 @@ namespace InMemoryDatabase.Tests
             Assert.Equal("bar", value.TypeString);
         }
         [Fact]
-        public void Set_NxOnNotExistingKey_TrackKey()
+        public void Set_NxOnMissingKey_WritesAndTracks()
         {
             var store = new RespStore();
             Assert.Equal(0, store.VolatileCount);
@@ -132,31 +132,31 @@ namespace InMemoryDatabase.Tests
         }
 
         [Fact]
-        public void Set_XxOnExistingKey_WritesAndTracks()
+        public void Set_XxOnMissingKey_WritesAndTracks()
         {
             var store = new RespStore();
             store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
             Assert.Equal(0, store.VolatileCount);
 
-            // XX with TTL, must be tracked because foo exists
-            bool result = store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
+            // XX with TTL, must be tracked because foo exists, checking with different value
+            bool result = store.Set("foo", RespValue.BulkString("baz"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
             Assert.True(result);
             Assert.Equal(1, store.VolatileCount);
             Assert.True(store.TryGet("foo", out var value));
-            Assert.Equal("bar", value.TypeString);
+            Assert.Equal("baz", value.TypeString);
         }
 
         [Fact]
         public void Set_XxOnMissingKey_DoesNotTrack()
         {
             var store = new RespStore();
-            //store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
             Assert.Equal(0, store.VolatileCount);
 
-            // XX with TTL, must be refused because foo exists
+            // XX with TTL, must be refused because foo does not exists
             bool result = store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
             Assert.False(result);
             Assert.Equal(0, store.VolatileCount);
+            Assert.Equal(0, store.PhysicalCount);
             Assert.False(store.TryGet("foo", out var _));
         }
 
