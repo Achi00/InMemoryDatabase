@@ -1,4 +1,5 @@
 ﻿using InMemoryDatabase.Tests.Setup;
+using System.Diagnostics;
 
 namespace InMemoryDatabase.Tests
 {
@@ -26,6 +27,20 @@ namespace InMemoryDatabase.Tests
 
 
             Assert.Equal(3, _fixture.Server.ActiveConnectionCount);
+        }
+
+        // helper, created delay for test so os can have time to return all tasks so we can collect it, otherwise we allways have 0 connections on server side
+        private static async Task WaitUntilAsync(Func<bool> condition, int timeoutMs = 2000)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            while (!condition())
+            {
+                if (stopwatch.ElapsedMilliseconds > timeoutMs)
+                    throw new TimeoutException("Condition was not met in time.");
+
+                await Task.Delay(10);
+            }
         }
     }
 }

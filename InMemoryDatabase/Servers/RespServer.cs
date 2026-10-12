@@ -40,10 +40,12 @@ namespace InMemoryDatabase.Servers
                 _ = connectionTask.ContinueWith(_ => _connections.TryRemove(id, out _));
             }
         }
-        // track state of all connections with deadline
+        // track state of all connections with deadline, for graceful shutdown
         internal async Task<bool> WaitForConnectionsAsync(TimeSpan timeout)
         {
+            // run collected live connection Tasks, waits for all to return/finish
             Task allDone = Task.WhenAll(_connections.Values);
+            // if timeout exhaust before all live connections
             Task first = await Task.WhenAny(allDone, Task.Delay(timeout));
             // true = all finished in time, false = deadline hit
             return first == allDone;   
