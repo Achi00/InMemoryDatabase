@@ -3,8 +3,6 @@ using InMemoryDatabase.Commands.Handlers;
 using InMemoryDatabase.Exucutors;
 using InMemoryDatabase.Servers;
 using InMemoryDatabase.Storage;
-using System.Net;
-using System.Net.Sockets;
 
 namespace InMemoryDatabase.Tests.Setup
 {
@@ -17,9 +15,11 @@ namespace InMemoryDatabase.Tests.Setup
 
         public int Port { get; }
 
+        public RespServer Server { get { return _server; } }
+
         public TestServerFixture()
         {
-            Port = GetFreePort();
+            Port = TcpPortHelper.GetFreePort();
 
             var store = new RespStore();
             var handlers = new ICommandHandler[]
@@ -54,15 +54,6 @@ namespace InMemoryDatabase.Tests.Setup
             catch (OperationCanceledException)
             {
             }
-        }
-        private int GetFreePort()
-        {
-            // post 0 = OS should pick free one
-            var listener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            listener.Stop();
-            return port;
         }
     }
 }
