@@ -30,6 +30,21 @@ namespace InMemoryDatabase.Tests
             Assert.Equal(3, _fixture.Server.ActiveConnectionCount);
         }
 
+        [Fact]
+        public async Task Disconnect_OneClinet_ShouldDropCount()
+        {
+            var client = await RespTestClient.ConnectAsync(_fixture.Port);
+            await using var client2 = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 2);
+
+            await client2.DisposeAsync();
+
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 1);
+
+            Assert.Equal(1, _fixture.Server.ActiveConnectionCount);
+        }
+
         // helper, created delay for test so os can have time to return all tasks so we can collect it, otherwise we allways have 0 connections on server side
         private static async Task WaitUntilAsync(Func<bool> condition, int timeoutMs = 2000)
         {
