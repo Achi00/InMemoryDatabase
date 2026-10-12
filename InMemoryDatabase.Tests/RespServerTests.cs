@@ -62,8 +62,8 @@ namespace InMemoryDatabase.Tests
         [Fact]
         public async Task WaitForConnections_ClientsClose_ReturnsTrue()
         {
-            await using var client1 = await RespTestClient.ConnectAsync(_fixture.Port);
-            await using var client2 = await RespTestClient.ConnectAsync(_fixture.Port);
+            var client1 = await RespTestClient.ConnectAsync(_fixture.Port);
+            var client2 = await RespTestClient.ConnectAsync(_fixture.Port);
 
             await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 2);
 
@@ -73,6 +73,25 @@ namespace InMemoryDatabase.Tests
             await client2.DisposeAsync();
 
             Assert.True(await waiting);
+        }
+
+        [Fact]
+        public async Task WaitForConnections_ThenCloseAll_ShouldMakeCountZero()
+        {
+            var client1 = await RespTestClient.ConnectAsync(_fixture.Port);
+            var client2 = await RespTestClient.ConnectAsync(_fixture.Port);
+            var client3 = await RespTestClient.ConnectAsync(_fixture.Port);
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 3);
+
+            Assert.Equal(3, _fixture.Server.ActiveConnectionCount);
+
+            await client1.DisposeAsync();
+            await client2.DisposeAsync();
+            await client3.DisposeAsync();
+
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 0);
+
+            Assert.Equal(0, _fixture.Server.ActiveConnectionCount);
         }
 
         // helper, created delay for test so os can have time to return all tasks so we can collect it, otherwise we allways have 0 connections on server side
