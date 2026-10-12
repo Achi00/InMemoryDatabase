@@ -47,7 +47,7 @@ namespace InMemoryDatabase.Servers
             Task allDone = Task.WhenAll(_connections.Values);
             // if timeout exhaust before all live connections
             Task first = await Task.WhenAny(allDone, Task.Delay(timeout));
-            // true = all finished in time, false = deadline hit
+            // true = all finished in time, false = deadline hit, no overloaded comparison only references compare
             return first == allDone;   
         }
 

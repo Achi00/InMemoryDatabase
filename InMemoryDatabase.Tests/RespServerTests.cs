@@ -25,6 +25,7 @@ namespace InMemoryDatabase.Tests
             await using var client2 = await RespTestClient.ConnectAsync(_fixture.Port);
             await using var client3 = await RespTestClient.ConnectAsync(_fixture.Port);
 
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 3);
 
             Assert.Equal(3, _fixture.Server.ActiveConnectionCount);
         }
