@@ -45,6 +45,36 @@ namespace InMemoryDatabase.Tests
             Assert.Equal(1, _fixture.Server.ActiveConnectionCount);
         }
 
+        [Fact]
+        public async Task WaitForConnections_ClientStillOpen_ReturnsFalse()
+        {
+            await using var client1 = await RespTestClient.ConnectAsync(_fixture.Port);
+            await using var client2 = await RespTestClient.ConnectAsync(_fixture.Port);
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 2);
+
+            Assert.Equal(2, _fixture.Server.ActiveConnectionCount);
+            
+            bool allClosed = await _fixture.Server.WaitForConnectionsAsync(TimeSpan.FromMilliseconds(200));
+
+            Assert.False(allClosed);
+        }
+
+        [Fact]
+        public async Task WaitForConnections_ClientsClose_ReturnsTrue()
+        {
+            await using var client1 = await RespTestClient.ConnectAsync(_fixture.Port);
+            await using var client2 = await RespTestClient.ConnectAsync(_fixture.Port);
+
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 2);
+
+            Task<bool> waiting = _fixture.Server.WaitForConnectionsAsync(TimeSpan.FromMilliseconds(200));
+
+            await client1.DisposeAsync();
+            await client2.DisposeAsync();
+
+            Assert.True(await waiting);
+        }
+
         // helper, created delay for test so os can have time to return all tasks so we can collect it, otherwise we allways have 0 connections on server side
         private static async Task WaitUntilAsync(Func<bool> condition, int timeoutMs = 2000)
         {
