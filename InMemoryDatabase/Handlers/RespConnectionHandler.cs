@@ -27,7 +27,7 @@ namespace InMemoryDatabase.Handlers
                 {
                     result = await pipeReader.ReadAsync(readCts.Token);
                 }
-                catch (OperationCanceledException) when (!stopReading.IsCancellationRequested)
+                catch (OperationCanceledException) when (!stopReading.IsCancellationRequested || abort.IsCancellationRequested)
                 {
                     // server is shutting down while this connection was idle: leave quietly
                     break;
@@ -46,12 +46,12 @@ namespace InMemoryDatabase.Handlers
                     {
                         continue;
                     }
-                    Console.WriteLine($"Parsed array with {command.TypeArray?.Length} items");
+
                     var response = executor.Execute(command);
                     RespWriter.Write(response, pipeWriter);
 
-                    // pushes data into pipe
-                    await pipeWriter.FlushAsync();
+                    // pushes data into pipe, only abandoned if it hits hard deadline
+                    await pipeWriter.FlushAsync(abort);
                 }
 
                 pipeReader.AdvanceTo(buffer.Start, buffer.End);
@@ -70,10 +70,6 @@ namespace InMemoryDatabase.Handlers
         private static bool TryParseOne(ref ReadOnlySequence<byte> buffer, out RespValue command)
         {
             var reader = new SequenceReader<byte>(buffer);
-            // testing
-            //var reader = new SequenceReader<byte>(new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes("PING\r\n")));
-            //RespValue result = RespParser.ParseCommand(ref reader);
-            //PrintRespValue(result);
             
             try
             {
