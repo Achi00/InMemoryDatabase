@@ -17,6 +17,10 @@ namespace InMemoryDatabase.Servers
         private long _nextConnectionId;
         internal int ActiveConnectionCount => _connections.Count;
 
+        // tokens for soft and immediate shutdown
+        private readonly CancellationTokenSource _stopReadingCts = new();
+        private readonly CancellationTokenSource _abortCts = new();
+
         public RespServer(int port, RespCommandExecutor executor)
         {
             _listener = new TcpListener(IPAddress.Loopback, port);
@@ -34,7 +38,7 @@ namespace InMemoryDatabase.Servers
 
                 // should happend as single operation
                 long id = Interlocked.Increment(ref _nextConnectionId);
-                var connectionTask = HandleClientAsync(client, ct);
+                var connectionTask = HandleClientAsync(client);
 
                 _connections[id] = connectionTask;
                 _ = connectionTask.ContinueWith(_ => _connections.TryRemove(id, out _));
@@ -51,7 +55,7 @@ namespace InMemoryDatabase.Servers
             return first == allDone;   
         }
 
-        private async Task HandleClientAsync(TcpClient client, CancellationToken ct)
+        private async Task HandleClientAsync(TcpClient client)
         {
             using (client)
             {
@@ -61,7 +65,7 @@ namespace InMemoryDatabase.Servers
 
                 try
                 {
-                    await RespConnectionHandler.ProcessAsync(reader, writer, _executor, ct);
+                    await RespConnectionHandler.ProcessAsync(reader, writer, _executor, _stopReadingCts.Token, _abortCts.Token);
                 }
                 catch (Exception ex)
                 {
