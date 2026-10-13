@@ -44,6 +44,25 @@ namespace InMemoryDatabase.Servers
                 _ = connectionTask.ContinueWith(_ => _connections.TryRemove(id, out _));
             }
         }
+
+        internal async Task ShutdownConnectionAsyct(TimeSpan gracePeriod)
+        {
+            // tells every every connection to finish
+            _stopReadingCts.Cancel();
+
+            // pass deadline time to connectiosn for shutdown
+            bool isAllClosed = await WaitForConnectionsAsync(gracePeriod);
+
+            if (!isAllClosed)
+            {
+                // deadline passed, close watever running
+                _abortCts.Cancel();
+
+                // additional overhead passed as TimeSpan for connection exits
+                await WaitForConnectionsAsync(TimeSpan.FromSeconds(2));
+            }
+        }
+
         // track state of all connections with deadline, for graceful shutdown
         internal async Task<bool> WaitForConnectionsAsync(TimeSpan timeout)
         {
