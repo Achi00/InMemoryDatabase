@@ -94,6 +94,23 @@ namespace InMemoryDatabase.Tests
             Assert.Equal(0, _fixture.Server.ActiveConnectionCount);
         }
 
+
+        // shutdown tests
+        [Fact]
+        public async Task IdleConnection_ShutDown_ShouldCloseAll()
+        {
+            var client1 = await RespTestClient.ConnectAsync(_fixture.Port);
+            var client2 = await RespTestClient.ConnectAsync(_fixture.Port);
+            var client3 = await RespTestClient.ConnectAsync(_fixture.Port);
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 3);
+
+            await _fixture.Server.ShutdownConnectionAsyc(TimeSpan.FromMilliseconds(5000));
+
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 0);
+
+            Assert.Equal(0, _fixture.Server.ActiveConnectionCount);
+        }
+
         // helper, created delay for test so os can have time to return all tasks so we can collect it, otherwise we allways have 0 connections on server side
         private static async Task WaitUntilAsync(Func<bool> condition, int timeoutMs = 2000)
         {

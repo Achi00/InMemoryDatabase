@@ -45,7 +45,7 @@ namespace InMemoryDatabase.Servers
             }
         }
 
-        internal async Task ShutdownConnectionAsyct(TimeSpan gracePeriod)
+        internal async Task ShutdownConnectionAsyc(TimeSpan gracePeriod)
         {
             // tells every every connection to finish
             _stopReadingCts.Cancel();

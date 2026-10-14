@@ -47,6 +47,7 @@ namespace InMemoryDatabase.Handlers
                         continue;
                     }
 
+                    // takes no token to not have half executed commands
                     var response = executor.Execute(command);
                     RespWriter.Write(response, pipeWriter);
 
