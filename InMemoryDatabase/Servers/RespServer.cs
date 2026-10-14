@@ -45,7 +45,7 @@ namespace InMemoryDatabase.Servers
             }
         }
 
-        internal async Task ShutdownConnectionAsyc(TimeSpan gracePeriod)
+        internal async Task<bool> ShutdownConnectionsAsync(TimeSpan gracePeriod)
         {
             // tells every every connection to finish
             _stopReadingCts.Cancel();
@@ -61,6 +61,9 @@ namespace InMemoryDatabase.Servers
                 // additional overhead passed as TimeSpan for connection exits
                 await WaitForConnectionsAsync(TimeSpan.FromSeconds(2));
             }
+
+            // true = graceful, false = had to abort
+            return isAllClosed;
         }
 
         // track state of all connections with deadline, for graceful shutdown
