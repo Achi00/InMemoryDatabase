@@ -15,26 +15,28 @@ namespace InMemoryDatabase.Tests.Setup
 
         public int Port { get; }
 
+        public RespStore Store {  get; }
+
         public RespServer Server { get { return _server; } }
 
         public TestServerFixture()
         {
             Port = TcpPortHelper.GetFreePort();
 
-            var store = new RespStore();
+            Store = new RespStore();
             var handlers = new ICommandHandler[]
             {
                 new PingCommandHandler(),
-                new SetCommandHandler(store),
-                new GetCommandHandler(store),
-                new DelCommandHandler(store),
-                new ExistsCommandHandler(store),
-                new ExpireCommandHandler(store),
-                new TtlCommandHandler(store),
-                new IncrCommandHandler(store),
-                new DecrCommandHandler(store),
-                new IncrByCommandHandler(store),
-                new DecrByCommandHandler(store),
+                new SetCommandHandler(Store),
+                new GetCommandHandler(Store),
+                new DelCommandHandler(Store),
+                new ExistsCommandHandler(Store),
+                new ExpireCommandHandler(Store),
+                new TtlCommandHandler(Store),
+                new IncrCommandHandler(Store),
+                new DecrCommandHandler(Store),
+                new IncrByCommandHandler(Store),
+                new DecrByCommandHandler(Store),
             };
 
             var executor = new RespCommandExecutor(handlers);
