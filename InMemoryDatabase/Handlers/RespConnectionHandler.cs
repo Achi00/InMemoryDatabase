@@ -27,7 +27,7 @@ namespace InMemoryDatabase.Handlers
                 {
                     result = await pipeReader.ReadAsync(readCts.Token);
                 }
-                catch (OperationCanceledException) when (!stopReading.IsCancellationRequested || abort.IsCancellationRequested)
+                catch (OperationCanceledException) when (stopReading.IsCancellationRequested || abort.IsCancellationRequested)
                 {
                     // server is shutting down while this connection was idle: leave quietly
                     break;
