@@ -124,6 +124,8 @@ namespace InMemoryDatabase.Tests
 
             // send a command and start shutdown at the same moment
             await client.SendAsync("SET foo bar\r\n");
+
+            // start shutting down connections
             Task<bool> shutdown = _fixture.Server.ShutdownConnectionsAsync(TimeSpan.FromSeconds(2));
 
             string? reply;
