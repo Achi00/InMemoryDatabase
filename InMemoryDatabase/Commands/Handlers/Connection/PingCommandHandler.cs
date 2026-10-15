@@ -1,6 +1,6 @@
 ﻿using InMemoryDatabase.Resp.Models;
 
-namespace InMemoryDatabase.Commands.Handlers
+namespace InMemoryDatabase.Commands.Handlers.Connection
 {
     public sealed class PingCommandHandler : ICommandHandler
     {

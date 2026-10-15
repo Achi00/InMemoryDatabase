@@ -1,10 +1,11 @@
 ﻿using InMemoryDatabase.Commands;
 using InMemoryDatabase.Commands.Handlers;
+using InMemoryDatabase.Commands.Handlers.Connection;
+using InMemoryDatabase.Commands.Handlers.KeySpace;
+using InMemoryDatabase.Commands.Handlers.String;
 using InMemoryDatabase.Exucutors;
 using InMemoryDatabase.Servers;
 using InMemoryDatabase.Storage;
-using System.Net;
-using System.Net.Sockets;
 
 namespace InMemoryDatabase.Tests.Setup
 {
@@ -17,24 +18,28 @@ namespace InMemoryDatabase.Tests.Setup
 
         public int Port { get; }
 
+        public RespStore Store {  get; }
+
+        public RespServer Server { get { return _server; } }
+
         public TestServerFixture()
         {
-            Port = GetFreePort();
+            Port = TcpPortHelper.GetFreePort();
 
-            var store = new RespStore();
+            Store = new RespStore();
             var handlers = new ICommandHandler[]
             {
                 new PingCommandHandler(),
-                new SetCommandHandler(store),
-                new GetCommandHandler(store),
-                new DelCommandHandler(store),
-                new ExistsCommandHandler(store),
-                new ExpireCommandHandler(store),
-                new TtlCommandHandler(store),
-                new IncrCommandHandler(store),
-                new DecrCommandHandler(store),
-                new IncrByCommandHandler(store),
-                new DecrByCommandHandler(store),
+                new SetCommandHandler(Store),
+                new GetCommandHandler(Store),
+                new DelCommandHandler(Store),
+                new ExistsCommandHandler(Store),
+                new ExpireCommandHandler(Store),
+                new TtlCommandHandler(Store),
+                new IncrCommandHandler(Store),
+                new DecrCommandHandler(Store),
+                new IncrByCommandHandler(Store),
+                new DecrByCommandHandler(Store),
             };
 
             var executor = new RespCommandExecutor(handlers);
@@ -54,15 +59,6 @@ namespace InMemoryDatabase.Tests.Setup
             catch (OperationCanceledException)
             {
             }
-        }
-        private int GetFreePort()
-        {
-            // post 0 = OS should pick free one
-            var listener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            listener.Stop();
-            return port;
         }
     }
 }

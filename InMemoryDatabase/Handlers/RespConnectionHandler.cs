@@ -12,27 +12,31 @@ namespace InMemoryDatabase.Handlers
     {
         private static readonly TimeSpan IncompleteCommandTimeout = TimeSpan.FromSeconds(10);
 
-        public static async Task ProcessAsync(PipeReader pipeReader, PipeWriter pipeWriter, RespCommandExecutor executor, CancellationToken ct)
+        public static async Task ProcessAsync(PipeReader pipeReader, PipeWriter pipeWriter, RespCommandExecutor executor, CancellationToken stopReading, CancellationToken abort)
         {
             while (true)
             {
                 // trigger timeout in case process hand or not responsing
-                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                timeoutCts.CancelAfter(IncompleteCommandTimeout);
+                // waiting for following command: shutdown, abort or incomplete-command timeout
+                using var readCts = CancellationTokenSource.CreateLinkedTokenSource(stopReading, abort);
+                readCts.CancelAfter(IncompleteCommandTimeout);
 
                 ReadResult result;
 
                 try
                 {
-                    result = await pipeReader.ReadAsync(timeoutCts.Token);
-                    Console.WriteLine($"Received {result.Buffer.Length} bytes: {Convert.ToHexString(result.Buffer.ToArray())}");
+                    result = await pipeReader.ReadAsync(readCts.Token);
                 }
-                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                catch (OperationCanceledException) when (stopReading.IsCancellationRequested || abort.IsCancellationRequested)
+                {
+                    // server is shutting down while this connection was idle: leave quietly
+                    break;
+                }
+                catch (OperationCanceledException)
                 {
                     // throw in case of timeout
                     throw new RespProtocolException("Connecten timed out waiting for complete command");
                 }
-
                 ReadOnlySequence<byte> buffer = result.Buffer;
 
                 while (TryParseOne(ref buffer, out var command))
@@ -42,12 +46,13 @@ namespace InMemoryDatabase.Handlers
                     {
                         continue;
                     }
-                    Console.WriteLine($"Parsed array with {command.TypeArray?.Length} items");
+
+                    // takes no token to not have half executed commands
                     var response = executor.Execute(command);
                     RespWriter.Write(response, pipeWriter);
 
-                    // pushes data into pipe
-                    await pipeWriter.FlushAsync();
+                    // pushes data into pipe, only abandoned if it hits hard deadline
+                    await pipeWriter.FlushAsync(abort);
                 }
 
                 pipeReader.AdvanceTo(buffer.Start, buffer.End);
@@ -66,10 +71,6 @@ namespace InMemoryDatabase.Handlers
         private static bool TryParseOne(ref ReadOnlySequence<byte> buffer, out RespValue command)
         {
             var reader = new SequenceReader<byte>(buffer);
-            // testing
-            //var reader = new SequenceReader<byte>(new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes("PING\r\n")));
-            //RespValue result = RespParser.ParseCommand(ref reader);
-            //PrintRespValue(result);
             
             try
             {

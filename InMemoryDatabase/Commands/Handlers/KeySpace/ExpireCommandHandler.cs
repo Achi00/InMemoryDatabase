@@ -3,7 +3,7 @@ using InMemoryDatabase.Storage;
 using System.Buffers.Text;
 using System.Text;
 
-namespace InMemoryDatabase.Commands.Handlers
+namespace InMemoryDatabase.Commands.Handlers.KeySpace
 {
     public sealed class ExpireCommandHandler : ICommandHandler
     {

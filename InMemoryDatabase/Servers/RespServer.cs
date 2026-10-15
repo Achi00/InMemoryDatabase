@@ -1,5 +1,6 @@
 ﻿using InMemoryDatabase.Exucutors;
 using InMemoryDatabase.Handlers;
+using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
@@ -11,6 +12,15 @@ namespace InMemoryDatabase.Servers
         private readonly TcpListener _listener;
         private readonly RespCommandExecutor _executor;
 
+        // connection tracking
+        private readonly ConcurrentDictionary<long, Task> _connections = new();
+        private long _nextConnectionId;
+        internal int ActiveConnectionCount => _connections.Count;
+
+        // tokens for soft and immediate shutdown
+        private readonly CancellationTokenSource _stopReadingCts = new();
+        private readonly CancellationTokenSource _abortCts = new();
+
         public RespServer(int port, RespCommandExecutor executor)
         {
             _listener = new TcpListener(IPAddress.Loopback, port);
@@ -19,18 +29,66 @@ namespace InMemoryDatabase.Servers
 
         public async Task RunAsync(CancellationToken ct)
         {
-            _listener.Start();
-            Console.WriteLine("Server listening...");
-
-            while (!ct.IsCancellationRequested)
+            try
             {
-                TcpClient client = await _listener.AcceptTcpClientAsync(ct);
-                // fire and forget per connection
-                _ = HandleClientAsync(client, ct);
+                _listener.Start();
+                Console.WriteLine("Server listening...");
+                while (!ct.IsCancellationRequested)
+                {
+                    TcpClient client = await _listener.AcceptTcpClientAsync(ct);
+
+                    // should happend as single operation
+                    long id = Interlocked.Increment(ref _nextConnectionId);
+                    var connectionTask = HandleClientAsync(client);
+
+                    _connections[id] = connectionTask;
+                    _ = connectionTask.ContinueWith(_ => _connections.TryRemove(id, out _));
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                Console.WriteLine("Stopped accepting new connections.");
+            }
+            finally
+            {
+                // release port
+                _listener.Stop();
             }
         }
 
-        private async Task HandleClientAsync(TcpClient client, CancellationToken ct)
+        internal async Task<bool> ShutdownConnectionsAsync(TimeSpan gracePeriod)
+        {
+            // tells every every connection to finish
+            _stopReadingCts.Cancel();
+
+            // pass deadline time to connectiosn for shutdown
+            bool isAllClosed = await WaitForConnectionsAsync(gracePeriod);
+
+            if (!isAllClosed)
+            {
+                // deadline passed, close watever running
+                _abortCts.Cancel();
+
+                // additional overhead passed as TimeSpan for connection exits
+                await WaitForConnectionsAsync(TimeSpan.FromSeconds(2));
+            }
+
+            // true = graceful, false = had to abort
+            return isAllClosed;
+        }
+
+        // track state of all connections with deadline, for graceful shutdown
+        internal async Task<bool> WaitForConnectionsAsync(TimeSpan timeout)
+        {
+            // run collected live connection Tasks, waits for all to return/finish
+            Task allDone = Task.WhenAll(_connections.Values);
+            // if timeout exhaust before all live connections
+            Task first = await Task.WhenAny(allDone, Task.Delay(timeout));
+            // true = all finished in time, false = deadline hit, no overloaded comparison only references compare
+            return first == allDone;   
+        }
+
+        private async Task HandleClientAsync(TcpClient client)
         {
             using (client)
             {
@@ -40,7 +98,7 @@ namespace InMemoryDatabase.Servers
 
                 try
                 {
-                    await RespConnectionHandler.ProcessAsync(reader, writer, _executor, ct);
+                    await RespConnectionHandler.ProcessAsync(reader, writer, _executor, _stopReadingCts.Token, _abortCts.Token);
                 }
                 catch (Exception ex)
                 {

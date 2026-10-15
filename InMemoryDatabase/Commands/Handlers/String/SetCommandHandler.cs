@@ -2,7 +2,7 @@
 using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Storage;
 
-namespace InMemoryDatabase.Commands.Handlers
+namespace InMemoryDatabase.Commands.Handlers.String
 {
     public sealed class SetCommandHandler : ICommandHandler
     {
