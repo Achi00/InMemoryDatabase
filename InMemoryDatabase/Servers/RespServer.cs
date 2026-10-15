@@ -45,6 +45,10 @@ namespace InMemoryDatabase.Servers
                     _ = connectionTask.ContinueWith(_ => _connections.TryRemove(id, out _));
                 }
             }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                Console.WriteLine("Stopped accepting new connections.");
+            }
             finally
             {
                 // release port
