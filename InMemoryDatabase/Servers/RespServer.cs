@@ -29,19 +29,26 @@ namespace InMemoryDatabase.Servers
 
         public async Task RunAsync(CancellationToken ct)
         {
-            _listener.Start();
-            Console.WriteLine("Server listening...");
-
-            while (!ct.IsCancellationRequested)
+            try
             {
-                TcpClient client = await _listener.AcceptTcpClientAsync(ct);
+                _listener.Start();
+                Console.WriteLine("Server listening...");
+                while (!ct.IsCancellationRequested)
+                {
+                    TcpClient client = await _listener.AcceptTcpClientAsync(ct);
 
-                // should happend as single operation
-                long id = Interlocked.Increment(ref _nextConnectionId);
-                var connectionTask = HandleClientAsync(client);
+                    // should happend as single operation
+                    long id = Interlocked.Increment(ref _nextConnectionId);
+                    var connectionTask = HandleClientAsync(client);
 
-                _connections[id] = connectionTask;
-                _ = connectionTask.ContinueWith(_ => _connections.TryRemove(id, out _));
+                    _connections[id] = connectionTask;
+                    _ = connectionTask.ContinueWith(_ => _connections.TryRemove(id, out _));
+                }
+            }
+            finally
+            {
+                // release port
+                _listener.Stop();
             }
         }
 

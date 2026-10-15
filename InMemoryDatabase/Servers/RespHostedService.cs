@@ -17,8 +17,9 @@ namespace InMemoryDatabase.Servers
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
+            // accepting loop stops first, port released no new connections
             await base.StopAsync(cancellationToken);
-
+            // finishing existing connections
             bool graceful = await _server.ShutdownConnectionsAsync(TimeSpan.FromSeconds(10));
 
             Console.WriteLine(graceful
