@@ -1,4 +1,4 @@
-﻿namespace InMemoryDatabase
+﻿namespace InMemoryDatabase.Storage.Keys
 {
     internal sealed class VolatileKeySet
     {

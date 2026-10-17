@@ -1,4 +1,6 @@
-﻿namespace InMemoryDatabase.Tests
+﻿using InMemoryDatabase.Storage.Keys;
+
+namespace InMemoryDatabase.Tests
 {
     public class VolatileKeySetTests
     {
