@@ -2,6 +2,7 @@
 
 namespace InMemoryDatabase.Resp.Models
 {
+    // protocol only
     public readonly struct RespValue
     {
         public RespValueType Type { get; }
