@@ -5,7 +5,7 @@ namespace InMemoryDatabase.Resp.Models
 {
     // storage which holds respvalue + datetime for TTL adn expiration
     // readonly struct avoids heap allocation other than dictionary's own storage
-    public readonly struct StoredEntry : IEquatable<StoredEntry>
+    internal readonly struct StoredEntry : IEquatable<StoredEntry>
     {
         // abstract class which is inherited on types which are design to be storage values, e.g: strings, lists...
         public StoredValue Value { get; }

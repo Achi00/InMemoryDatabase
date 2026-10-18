@@ -1,6 +1,7 @@
 ﻿using InMemoryDatabase.Parser.Enums;
 using InMemoryDatabase.Resp.Enums;
 using InMemoryDatabase.Resp.Models;
+using InMemoryDatabase.Storage.String;
 
 namespace InMemoryDatabase.Storage
 {
@@ -8,9 +9,9 @@ namespace InMemoryDatabase.Storage
     public partial class RespStore
     {
         // dictionary value StoredEntry = RespValue + DateTime metadata
-        public bool Set(string key, RespValue value, DateTimeOffset? expiresAt, SetCondition condition)
+        public bool Set(string key, string value, DateTimeOffset? expiresAt, SetCondition condition)
         {
-            var entry = new StoredEntry(value, expiresAt);
+            var entry = new StoredEntry(new StringValue(value), expiresAt);
 
             // if condition state does not contains any additional params about ttl or expiry
             if (condition == SetCondition.Always)
