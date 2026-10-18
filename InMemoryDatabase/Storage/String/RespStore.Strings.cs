@@ -86,12 +86,20 @@ namespace InMemoryDatabase.Storage
 
                 if (!existed || current.IsExpired)
                 {
-                    // missing or expired key behaves as if it was 0
-                    current = new StoredEntry(RespValue.BulkString("0"), null);
+                    // missing or expired key behaves as "0"
+                    current = new StoredEntry(new StringValue("0"), null);
+                }
+
+                // exlicit value's type check for new stringValue
+                if (current.Value is not StringValue str)
+                {
+                    newValue = 0;
+                    error = "WRONGTYPE Operation against a key holding the wrong kind of value";
+                    return false;
                 }
 
                 // check if value type is bulk string in first place or can be parsed as long
-                if (current.Value.Type != RespValueType.BulkString || !long.TryParse(current.Value.TypeString, out long currentNum))
+                if (!long.TryParse(str.Value, out long currentNum))
                 {
                     newValue = 0;
                     error = "ERR value is not an integer or out of range";
@@ -104,7 +112,8 @@ namespace InMemoryDatabase.Storage
                     long candidate = checked(currentNum + delta);
 
                     // update already parsed long back to string again
-                    var updated = new StoredEntry(RespValue.BulkString(candidate.ToString()), current.ExpiresAt);
+                    // updating result
+                    var updated = new StoredEntry(new StringValue(candidate.ToString()), current.ExpiresAt);
 
                     bool swapped = existed
                         ? _data.TryUpdate(key, updated, current)

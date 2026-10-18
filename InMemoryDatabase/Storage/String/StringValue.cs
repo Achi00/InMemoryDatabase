@@ -1,6 +1,6 @@
 ﻿namespace InMemoryDatabase.Storage.String
 {
-    internal class StringValue : StoredValue
+    internal sealed class StringValue : StoredValue
     {
         public string Value { get; }
         public StringValue(string value)
