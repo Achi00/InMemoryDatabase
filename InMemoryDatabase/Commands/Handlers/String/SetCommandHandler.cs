@@ -97,7 +97,7 @@ namespace InMemoryDatabase.Commands.Handlers.String
                     return RespValue.Error("ERR syntax error");
                 }
             }
-            bool written = _store.Set(key, RespValue.BulkString(value), expiresAt, condition);
+            bool written = _store.Set(key, value, expiresAt, condition);
 
             return written ? RespValue.SimpleString("OK") : RespValue.Null;
         }

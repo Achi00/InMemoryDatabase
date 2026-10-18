@@ -13,7 +13,7 @@ namespace InMemoryDatabase.Tests
 
             for (int i = 0; i < 100; i++)
             {
-                store.Set($"key{i}", RespValue.BulkString("v"),
+                store.Set($"key{i}", "v",
                     DateTimeOffset.UtcNow.AddMilliseconds(50), SetCondition.Always);
             }
 
@@ -34,11 +34,11 @@ namespace InMemoryDatabase.Tests
 
             for (int i = 0; i < 50; i++)
             {
-                store.Set($"expiring{i}", RespValue.BulkString("v"),
+                store.Set($"expiring{i}", "v",
                     DateTimeOffset.UtcNow.AddMilliseconds(50), SetCondition.Always);
-                store.Set($"permanent{i}", RespValue.BulkString("v"),
+                store.Set($"permanent{i}", "v",
                     null, SetCondition.Always);
-                store.Set($"later{i}", RespValue.BulkString("v"),
+                store.Set($"later{i}", "v",
                     DateTimeOffset.UtcNow.AddMinutes(5), SetCondition.Always);
             }
 
@@ -55,7 +55,7 @@ namespace InMemoryDatabase.Tests
         {
             var store = new RespStore();
             // permanent key not tracked by VolatileKeySet
-            store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            store.Set("foo", "bar", null, SetCondition.Always);
 
             Assert.Equal(0, store.VolatileCount);
 
@@ -70,10 +70,10 @@ namespace InMemoryDatabase.Tests
         {
             var store = new RespStore();
             // permanent key not tracked by VolatileKeySet
-            store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.Always);
+            store.Set("foo", "bar", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.Always);
             Assert.Equal(1, store.VolatileCount);
 
-            bool result = store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            bool result = store.Set("foo", "bar", null, SetCondition.Always);
             Assert.Equal(0, store.VolatileCount);
             Assert.True(result);
         }
@@ -82,7 +82,7 @@ namespace InMemoryDatabase.Tests
         {
             var store = new RespStore();
 
-            store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.Always);
+            store.Set("foo", "bar", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.Always);
             Assert.Equal(1, store.VolatileCount);
             
             bool result = store.Delete("foo");
@@ -94,15 +94,15 @@ namespace InMemoryDatabase.Tests
         public void Set_NxRefused_DoesNotTrackKey()
         {
             var store = new RespStore();
-            store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            store.Set("foo", "bar", null, SetCondition.Always);
             Assert.Equal(0, store.VolatileCount);
 
             // NX with TTL, must be refused because foo exists
-            bool result = store.Set("foo", RespValue.BulkString("baz"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfNotExists);
+            bool result = store.Set("foo", "baz", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfNotExists);
             Assert.False(result);
             Assert.Equal(0, store.VolatileCount);
-            Assert.True(store.TryGet("foo", out var value));
-            Assert.Equal("bar", value.TypeString);
+            Assert.True(store.TryGetString("foo", out var value));
+            Assert.Equal("bar", value);
         }
         [Fact]
         public void Set_NxOnMissingKey_WritesAndTracks()
@@ -111,26 +111,26 @@ namespace InMemoryDatabase.Tests
             Assert.Equal(0, store.VolatileCount);
 
             // NX with TTL, must be tracked because foo not exists
-            bool result = store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfNotExists);
+            bool result = store.Set("foo", "bar", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfNotExists);
             Assert.True(result);
             Assert.Equal(1, store.VolatileCount);
-            Assert.True(store.TryGet("foo", out var value));
-            Assert.Equal("bar", value.TypeString);
+            Assert.True(store.TryGetString("foo", out var value));
+            Assert.Equal("bar", value);
         }
 
         [Fact]
         public void Set_XxOnMissingKey_WritesAndTracks()
         {
             var store = new RespStore();
-            store.Set("foo", RespValue.BulkString("bar"), null, SetCondition.Always);
+            store.Set("foo", "bar", null, SetCondition.Always);
             Assert.Equal(0, store.VolatileCount);
 
             // XX with TTL, must be tracked because foo exists, checking with different value
-            bool result = store.Set("foo", RespValue.BulkString("baz"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
+            bool result = store.Set("foo", "baz", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
             Assert.True(result);
             Assert.Equal(1, store.VolatileCount);
-            Assert.True(store.TryGet("foo", out var value));
-            Assert.Equal("baz", value.TypeString);
+            Assert.True(store.TryGetString("foo", out var value));
+            Assert.Equal("baz", value);
         }
 
         [Fact]
@@ -140,11 +140,11 @@ namespace InMemoryDatabase.Tests
             Assert.Equal(0, store.VolatileCount);
 
             // XX with TTL, must be refused because foo does not exists
-            bool result = store.Set("foo", RespValue.BulkString("bar"), DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
+            bool result = store.Set("foo", "bar", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
             Assert.False(result);
             Assert.Equal(0, store.VolatileCount);
             Assert.Equal(0, store.PhysicalCount);
-            Assert.False(store.TryGet("foo", out var _));
+            Assert.False(store.TryGetString("foo", out var _));
         }
 
         private static void RunSampler(RespStore store, int rounds = 1000)

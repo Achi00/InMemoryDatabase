@@ -21,7 +21,7 @@ namespace InMemoryDatabase.Commands.Handlers
             }
 
             string key = args[0].TypeString!;
-            return _store.TryGet(key, out RespValue value) ? value : RespValue.Null;
+            return _store.TryGetString(key, out string? value) ? RespValue.BulkString(value!) : RespValue.Null;
         }
     }
 }

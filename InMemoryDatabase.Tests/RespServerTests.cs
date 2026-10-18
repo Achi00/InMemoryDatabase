@@ -141,7 +141,7 @@ namespace InMemoryDatabase.Tests
 
             await shutdown;
 
-            bool executed = _fixture.Store.TryGet("foo", out _);
+            bool executed = _fixture.Store.TryGetString("foo", out _);
             bool replied = reply == "+OK\r\n";
 
             Assert.True(executed == replied,

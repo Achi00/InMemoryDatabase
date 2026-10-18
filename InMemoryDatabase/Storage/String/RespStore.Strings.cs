@@ -117,5 +117,18 @@ namespace InMemoryDatabase.Storage
                 }
             }
         }
+
+        // same function as TryGet but for strings only, checks if type is StringValue instead of list or any other
+        internal bool TryGetString(string key, out string? value)
+        {
+            if (TryGetLiveEntry(key, out StoredEntry entry) && entry.Value is StringValue str)
+            {
+                value = str.Value;
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
     }
 }

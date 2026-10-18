@@ -24,7 +24,7 @@ namespace InMemoryDatabase.Commands.Handlers.KeySpace
             // no need to start from index 1, all element is key now
             for (int i = 0; i < args.Length; i++)
             {
-                if (_store.TryGet(args[i].TypeString!, out _))
+                if (_store.KeyExists(args[i].TypeString!))
                 {
                     count++;
                 }
