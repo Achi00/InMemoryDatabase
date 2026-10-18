@@ -126,5 +126,29 @@ namespace InMemoryDatabase.Storage
                 _volatileKeySet.Remove(key);
             }
         }
+        // get existing key as StoredEntry or remove
+        internal bool KeyExists(string key) => TryGetLiveEntry(key, out _);
+
+        private bool TryGetLiveEntry(string key, out StoredEntry entry)
+        {
+            if (!_data.TryGetValue(key, out entry))
+            {
+                return false;
+            }
+
+            if (entry.IsExpired)
+            {
+                // remove only if its still the expired entry we read
+                if (_data.TryRemove(new KeyValuePair<string, StoredEntry>(key, entry)))
+                {
+                    _volatileKeySet.Remove(key);
+                }
+
+                entry = default;
+                return false;
+            }
+
+            return true;
+        }
     }
 }

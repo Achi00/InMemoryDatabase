@@ -55,28 +55,7 @@ namespace InMemoryDatabase.Storage
 
         // checks if expired, lazy eviction strategy, only remove when convenient, reduce cpu overhead
         // expired key value pair is removed when accessed
-        internal bool TryGet(string key, out RespValue value)
-        {
-            if (_data.TryGetValue(key, out StoredEntry entry))
-            {
-                if (entry.IsExpired)
-                {
-                    if (_data.TryRemove(new KeyValuePair<string, StoredEntry>(key, entry)))
-                    {
-                        _volatileKeySet.Remove(key);
-                    }
-
-                    value = default;
-                    return false;
-                }
-
-                value = entry.Value;
-                return true;
-            }
-
-            value = default;
-            return false;
-        }
+        //internal bool TryGet(string key, out RespValue value)
 
         internal bool TryIncrement(string key, long delta, out long newValue, out string? error)
         {
