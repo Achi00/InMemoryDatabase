@@ -1,10 +1,8 @@
-﻿using InMemoryDatabase.Storage.List;
-
-namespace InMemoryDatabase.Storage
+﻿namespace InMemoryDatabase.Storage
 {
     // partial class for list content
+    // manages many instances of LinkedListStorage
     public partial class RespStore
     {
-        
     }
 }

@@ -1,10 +1,12 @@
 ﻿namespace InMemoryDatabase.Storage.List
 {
+    // represents single list
     internal sealed class LinkedListStorage : IListStorage
     {
         private readonly LinkedList<string> _items = new();
         public int Count { get => _items.Count; }
 
+        // walks the list, O(n)
         public string Get(int index)
         {
             return _items.ElementAt(index);
