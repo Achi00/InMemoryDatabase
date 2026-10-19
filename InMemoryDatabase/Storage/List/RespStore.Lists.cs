@@ -15,22 +15,38 @@ namespace InMemoryDatabase.Storage
 
         public string? PopLeft()
         {
-            throw new NotImplementedException();
+            if (_items.Count == 0)
+            {
+                return null;
+            }
+
+            // keep before removing
+            string value = _items.First!.Value;
+            _items.RemoveFirst();
+            return value;
         }
 
         public string? PopRight()
         {
-            throw new NotImplementedException();
+            if (_items.Count == 0)
+            {
+                return null;
+            }
+
+            string value = _items.Last!.Value;
+            _items.RemoveLast();
+
+            return value;
         }
 
         public void PushLeft(string value)
         {
-            throw new NotImplementedException();
+            _items.AddFirst(value);
         }
 
         public void PushRight(string value)
         {
-            throw new NotImplementedException();
+            _items.AddLast(value);
         }
 
         public string[] Range(int start, int count)
