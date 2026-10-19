@@ -14,6 +14,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddSingleton<RespStore>();
 
+
 builder.Services.AddSingleton<ICommandHandler, SetCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, GetCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, DelCommandHandler>();

@@ -1,5 +1,4 @@
-﻿using InMemoryDatabase.Parser.Enums;
-using InMemoryDatabase.Resp.Enums;
+﻿using InMemoryDatabase.Resp.Enums;
 using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Storage.String;
 

@@ -1,7 +1,9 @@
-﻿namespace InMemoryDatabase.Storage
+﻿using InMemoryDatabase.Storage.List;
+
+namespace InMemoryDatabase.Storage
 {
     // partial class for list content
-    public partial class RespStore
+    public partial class RespStore : IRespStoreList
     {
 
     }
