@@ -28,14 +28,35 @@ namespace InMemoryDatabase.Storage
                         // check if data is still in list
                         if (!_data.TryGetValue(key, out var current) || !ReferenceEquals(current.Value, list))
                         {
+                            // cerry on with whatever is there now
                             continue;
                         }
+
+                        PushAll(list.Items, values, side);
+                        length = list.Items.Count;
+                        return ListStatus.Ok;
                     }
                 }
-            }
 
-            length = 0;
-            return ListStatus.Ok;
+                // key is missing or expired
+                var newList = new ListValue(new LinkedListStorage());
+                PushAll(newList.Items, values, side);
+                var newEntry = new StoredEntry(newList, expiresAt: null);
+
+                bool added = exists 
+                    // replace/update expired entry
+                    ? _data.TryUpdate(key, newEntry, entry) 
+                    // add new key
+                    : _data.TryAdd(key, newEntry);
+
+                if (added)
+                {
+                    // add tracking in keysets
+                    _volatileKeySet.Remove(key);
+                    length = newList.Items.Count;
+                    return ListStatus.Ok;
+                }
+            }
         }
 
         // bulk push
