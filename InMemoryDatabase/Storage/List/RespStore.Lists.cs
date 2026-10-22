@@ -11,18 +11,44 @@ namespace InMemoryDatabase.Storage
         internal ListStatus Push(string key, string[] values, ListSide side, out long length)
         {
             // uses main RespStore's dictionary
-            // if key was not found create new
-            if (!_data.TryGetValue(key, out StoredEntry entry) && !entry.IsExpired)
+            while (true)
             {
-                if (entry.Value is not ListValue list)
+                bool exists = _data.TryGetValue(key, out var entry);
+
+                if (exists && !entry.IsExpired)
                 {
-                    length = 0;
-                    return ListStatus.WrongType;
+                    if (entry.Value is not ListValue list)
+                    {
+                        length = 0;
+                        return ListStatus.WrongType;
+                    }
+
+                    lock (list.Sync)
+                    {
+                        // check if data is still in list
+                        if (!_data.TryGetValue(key, out var current) || !ReferenceEquals(current.Value, list))
+                        {
+                            continue;
+                        }
+                    }
                 }
             }
 
             length = 0;
             return ListStatus.Ok;
+        }
+
+        // bulk push
+        private static void PushAll(IListStorage items, string[] values, ListSide side)
+        {
+            foreach (string value in values)
+            {
+                if (side == ListSide.Left)
+                {
+                    items.PushLeft(value);
+                }
+                else items.PushRight(value);
+            }
         }
     }
 }
