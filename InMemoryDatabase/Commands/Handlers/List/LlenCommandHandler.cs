@@ -1,0 +1,39 @@
+﻿using InMemoryDatabase.Resp.Models;
+using InMemoryDatabase.Storage;
+using InMemoryDatabase.Storage.List.Enums;
+
+namespace InMemoryDatabase.Commands.Handlers.List
+{
+    public sealed class LlenCommandHandler : ICommandHandler
+    {
+        private readonly RespStore _store;
+        public string Name => "LLEN";
+
+        public LlenCommandHandler(RespStore store)
+        {
+            _store = store;
+        }
+
+        public RespValue Execute(RespValue[] args)
+        {
+            if (args.Length < 1)
+            {
+                return RespValue.Error($"ERR wrong number of arguments for '{Name}' command");
+            }
+
+            string key = args[0].TypeString!;
+
+            var status = _store.Length(key, out int count);
+
+
+            if (status == ListStatus.WrongType)
+            {
+                return RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value");
+            }
+            else
+            {
+                return RespValue.Integer(count);
+            }
+        }
+    }
+}

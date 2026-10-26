@@ -31,7 +31,7 @@ namespace InMemoryDatabase.Commands.Handlers.List.Pop
                 values[i - 1] = args[i].TypeString!;
             }
 
-            var status = _store.Pop(key, Storage.List.Enums.ListSide.Left, out var listValue);
+            var status = _store.Pop(key, ListSide.Left, out var listValue);
 
             if (status == ListStatus.WrongType)
             {

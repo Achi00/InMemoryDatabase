@@ -107,6 +107,28 @@ namespace InMemoryDatabase.Storage
             }
         }
 
+        internal ListStatus Length(string key, out int count)
+        {
+            if (!_data.TryGetValue(key, out StoredEntry entry) || entry.IsExpired)
+            {
+                count = 0;
+                return ListStatus.NotFound;
+            }
+
+            // key's value is not list
+            if (entry.Value is not ListValue list)
+            {
+                count = 0;
+                return ListStatus.WrongType;
+            }
+
+            lock (list.Sync)
+            {
+                count = list.Items.Count;
+            }
+            return ListStatus.Ok;
+        }
+
         // bulk push
         private static void PushAll(IListStorage items, string[] values, ListSide side)
         {
