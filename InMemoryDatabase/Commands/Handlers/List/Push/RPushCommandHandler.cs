@@ -2,7 +2,7 @@
 using InMemoryDatabase.Storage;
 using InMemoryDatabase.Storage.List.Enums;
 
-namespace InMemoryDatabase.Commands.Handlers.List
+namespace InMemoryDatabase.Commands.Handlers.List.Push
 {
     public sealed class RPushCommandHandler : ICommandHandler
     {
