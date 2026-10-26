@@ -7,18 +7,18 @@ namespace InMemoryDatabase.Commands.Handlers.List
     public sealed class LPushCommandHandler : ICommandHandler
     {
         private readonly RespStore _store;
+        public string Name => "LPUSH";
 
         public LPushCommandHandler(RespStore store)
         {
             _store = store;
         }
-        public string Name => "LPUSH";
 
         public RespValue Execute(RespValue[] args)
         {
             if (args.Length < 2)
             {
-                return RespValue.Error("ERR wrong number of arguments for 'LPUSH' command");
+                return RespValue.Error($"ERR wrong number of arguments for '{Name}' command");
             }
 
             string key = args[0].TypeString!;
