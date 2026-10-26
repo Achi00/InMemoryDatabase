@@ -35,7 +35,7 @@ namespace InMemoryDatabase.Commands.Handlers.List
 
             if (status == ListStatus.WrongType)
             {
-                return RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value")
+                return RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value");
             }
             else
             {
