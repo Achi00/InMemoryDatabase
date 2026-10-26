@@ -15,8 +15,4 @@
   	<InternalsVisibleTo Include="InMemoryDatabase.Tests" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Commands\Handlers\List\" />
-  </ItemGroup>
-
 </Project>
