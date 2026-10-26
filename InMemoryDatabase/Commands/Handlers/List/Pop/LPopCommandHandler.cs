@@ -16,31 +16,23 @@ namespace InMemoryDatabase.Commands.Handlers.List.Pop
 
         public RespValue Execute(RespValue[] args)
         {
-            if (args.Length < 2)
+            if (args.Length != 1)
             {
                 return RespValue.Error($"ERR wrong number of arguments for '{Name}' command");
             }
 
             string key = args[0].TypeString!;
 
-            string[] values = new string[args.Length - 1];
+            ListStatus status = _store.Pop(key, ListSide.Left, out string? value);
 
-            // skip command i = 1
-            for (int i = 1; i < args.Length; i++)
+            // depending on Pop returnes ListStatus value
+            return status switch
             {
-                values[i - 1] = args[i].TypeString!;
-            }
-
-            var status = _store.Pop(key, ListSide.Left, out var listValue);
-
-            if (status == ListStatus.WrongType)
-            {
-                return RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value");
-            }
-            else
-            {
-                return RespValue.SimpleString(listValue!);
-            }
+                ListStatus.Ok => RespValue.BulkString(value!),
+                ListStatus.NotFound => RespValue.Null,
+                ListStatus.WrongType => RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value"),
+                _ => throw new InvalidOperationException($"Unexpected status {status}")
+            };
         }
     }
 }
