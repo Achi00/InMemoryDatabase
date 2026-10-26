@@ -2,7 +2,8 @@
 {
     internal enum ListStatus 
     { 
-        Ok, 
+        Ok,
+        NotFound,
         WrongType 
     }
 
