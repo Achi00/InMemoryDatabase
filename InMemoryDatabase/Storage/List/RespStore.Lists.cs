@@ -109,7 +109,7 @@ namespace InMemoryDatabase.Storage
 
         internal ListStatus Length(string key, out int count)
         {
-            if (!_data.TryGetValue(key, out StoredEntry entry) || entry.IsExpired)
+            if (!TryGetLiveEntry(key, out StoredEntry entry))
             {
                 count = 0;
                 return ListStatus.NotFound;
