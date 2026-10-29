@@ -33,7 +33,7 @@ namespace InMemoryDatabase.Storage
                         if (!_data.TryGetValue(key, out var current) || !ReferenceEquals(current.Value, list))
                         {
                             // information is out of date
-                            // carry on with whatever is in this list again
+                            // list is no longer stored under this key, read the dictionary again
                             continue;
                         }
 
@@ -89,7 +89,7 @@ namespace InMemoryDatabase.Storage
                     if (!_data.TryGetValue(key, out var current) || !ReferenceEquals(current.Value, list))
                     {
                         // information is out of date
-                        // carry on with whatever is in this list again
+                        // list is no longer stored under this key, read the dictionary again
                         continue;
                     }
 

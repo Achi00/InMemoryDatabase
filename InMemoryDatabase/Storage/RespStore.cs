@@ -1,5 +1,6 @@
 ﻿using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Storage.Keys;
+using InMemoryDatabase.Storage.List.Enums;
 using System.Buffers;
 using System.Collections.Concurrent;
 
@@ -96,9 +97,8 @@ namespace InMemoryDatabase.Storage
 
         internal long GetTtlSeconds(string key)
         {
-            if (!_data.TryGetValue(key, out StoredEntry entry) || entry.IsExpired)
+            if (!TryGetLiveEntry(key, out StoredEntry entry))
             {
-                // does not exists or expired
                 return -2;
             }
 
