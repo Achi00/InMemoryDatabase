@@ -1,6 +1,5 @@
 ﻿using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Storage.Keys;
-using InMemoryDatabase.Storage.List.Enums;
 using System.Buffers;
 using System.Collections.Concurrent;
 
