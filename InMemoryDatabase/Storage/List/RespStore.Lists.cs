@@ -68,7 +68,7 @@ namespace InMemoryDatabase.Storage
         {
             while (true)
             {
-                if (!_data.TryGetValue(key, out StoredEntry entry) || entry.IsExpired)
+                if (!TryGetLiveEntry(key, out StoredEntry entry))
                 {
                     value = null;
                     return ListStatus.NotFound;
