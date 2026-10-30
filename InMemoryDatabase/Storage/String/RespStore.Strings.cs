@@ -60,16 +60,16 @@ namespace InMemoryDatabase.Storage
         {
             while (true)
             {
-                bool existed = _data.TryGetValue(key, out StoredEntry current);
+                bool present = _data.TryGetValue(key, out StoredEntry stored);
+                // exists and is not expired
+                bool live = present && !stored.IsExpired;
 
-                if (!existed || current.IsExpired)
-                {
-                    // missing or expired key behaves as "0"
-                    current = new StoredEntry(new StringValue("0"), null);
-                }
+                // live value or "0" for a missing/expired key
+                StoredValue currentValue = live ? stored.Value : new StringValue("0");
+                DateTimeOffset? expiresAt = live ? stored.ExpiresAt : null;
 
                 // exlicit value's type check for new stringValue
-                if (current.Value is not StringValue str)
+                if (currentValue is not StringValue str)
                 {
                     newValue = 0;
                     error = "WRONGTYPE Operation against a key holding the wrong kind of value";
@@ -91,15 +91,22 @@ namespace InMemoryDatabase.Storage
 
                     // update already parsed long back to string again
                     // updating result
-                    var updated = new StoredEntry(new StringValue(candidate.ToString()), current.ExpiresAt);
+                    var updated = new StoredEntry(new StringValue(candidate.ToString()), expiresAt);
 
-                    bool swapped = existed
-                        ? _data.TryUpdate(key, updated, current)
+                    // compare against "stored", entry which was read from dictionary
+                    bool swapped = present
+                        ? _data.TryUpdate(key, updated, stored)
                         // key did not exist, add new instead
                         : _data.TryAdd(key, updated);
 
                     if (swapped)
                     {
+                        if (present && !live)
+                        {
+                            // replaced an expired key: the new value has no TTL
+                            _volatileKeySet.Remove(key);
+                        }
+
                         newValue = candidate;
                         error = null;
                         return true;

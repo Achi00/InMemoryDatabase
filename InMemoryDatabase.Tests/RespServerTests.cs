@@ -112,41 +112,41 @@ namespace InMemoryDatabase.Tests
             Assert.Equal("", afterShutdown);
         }
 
-        //[Theory]
-        //[MemberData(nameof(Runs))]
-        //public async Task Shutdown_NeverExecutesWithoutReplying(int run)
-        //{
-        //    // runs enumerable of 30, only used to repeat the test
-        //    _ = run;
+        [Theory]
+        [MemberData(nameof(Runs))]
+        public async Task Shutdown_NeverExecutesWithoutReplying(int run)
+        {
+            // runs enumerable of 30, only used to repeat the test
+            _ = run;
 
-        //    await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
-        //    await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 1);
+            await using var client = await RespTestClient.ConnectAsync(_fixture.Port);
+            await WaitUntilAsync(() => _fixture.Server.ActiveConnectionCount == 1);
 
-        //    // send a command and start shutdown at the same moment
-        //    await client.SendAsync("SET foo bar\r\n");
+            // send a command and start shutdown at the same moment
+            await client.SendAsync("SET foo bar\r\n");
 
-        //    // start shutting down connections
-        //    Task<bool> shutdown = _fixture.Server.ShutdownConnectionsAsync(TimeSpan.FromSeconds(2));
+            // start shutting down connections
+            Task<bool> shutdown = _fixture.Server.ShutdownConnectionsAsync(TimeSpan.FromSeconds(2));
 
-        //    string? reply;
-        //    try
-        //    {
-        //        reply = await client.ReadRawAsync();
-        //    }
-        //    catch (Exception ex) when (ex is InvalidOperationException or IOException)
-        //    {
-        //        // server closed the connection without replying
-        //        reply = null;
-        //    }
+            string? reply;
+            try
+            {
+                reply = await client.ReadRawAsync();
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException)
+            {
+                // server closed the connection without replying
+                reply = null;
+            }
 
-        //    await shutdown;
+            await shutdown;
 
-        //    bool executed = _fixture.Store.TryGetString("foo", out _);
-        //    bool replied = reply == "+OK\r\n";
+            var status = _fixture.Store.TryGetString("foo", out _);
+            bool replied = reply == "+OK\r\n";
 
-        //    Assert.True(executed == replied,
-        //        $"executed: {executed}, replied: {replied}, reply: {reply ?? "<connection closed>"}");
-        //}
+            Assert.True(executed == replied,
+                $"executed: {executed}, replied: {replied}, reply: {reply ?? "<connection closed>"}");
+        }
 
         // helper, created delay for test so os can have time to return all tasks so we can collect it, otherwise we allways have 0 connections on server side
         private static async Task WaitUntilAsync(Func<bool> condition, int timeoutMs = 2000)

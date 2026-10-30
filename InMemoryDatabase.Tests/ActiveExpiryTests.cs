@@ -122,7 +122,7 @@ namespace InMemoryDatabase.Tests
         }
 
         [Fact]
-        public void Set_XxOnMissingKey_WritesAndTracks()
+        public void Set_XxOnExistingKey_WritesAndTracks()
         {
             var store = new RespStore();
             store.Set("foo", "bar", null, SetCondition.Always);
