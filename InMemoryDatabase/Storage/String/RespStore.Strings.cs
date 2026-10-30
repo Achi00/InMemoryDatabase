@@ -1,5 +1,6 @@
 ﻿using InMemoryDatabase.Resp.Enums;
 using InMemoryDatabase.Resp.Models;
+using InMemoryDatabase.Storage.List.Enums;
 using InMemoryDatabase.Storage.String;
 
 namespace InMemoryDatabase.Storage
@@ -118,16 +119,22 @@ namespace InMemoryDatabase.Storage
         }
 
         // same function as TryGet but for strings only, checks if type is StringValue instead of list or any other
-        internal bool TryGetString(string key, out string? value)
+        internal StoreStatus TryGetString(string key, out string? value)
         {
-            if (TryGetLiveEntry(key, out StoredEntry entry) && entry.Value is StringValue str)
+            value = null;
+
+            if (!TryGetLiveEntry(key, out StoredEntry entry))
             {
-                value = str.Value;
-                return true;
+                return StoreStatus.NotFound;
             }
 
-            value = null;
-            return false;
+            if (entry.Value is not StringValue str)
+            {
+                return StoreStatus.WrongType;
+            }
+
+            value = str.Value;
+            return StoreStatus.Ok;
         }
     }
 }

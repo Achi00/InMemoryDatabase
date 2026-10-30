@@ -1,5 +1,6 @@
 ﻿using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Storage;
+using InMemoryDatabase.Storage.List.Enums;
 
 namespace InMemoryDatabase.Commands.Handlers
 {
@@ -21,7 +22,16 @@ namespace InMemoryDatabase.Commands.Handlers
             }
 
             string key = args[0].TypeString!;
-            return _store.TryGetString(key, out string? value) ? RespValue.BulkString(value!) : RespValue.Null;
+
+            var status = _store.TryGetString(key, out string? value);
+
+            return status switch
+            {
+                StoreStatus.Ok => RespValue.BulkString(value!),
+                StoreStatus.NotFound => RespValue.Null,
+                StoreStatus.WrongType => RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value"),
+                _ => throw new InvalidOperationException($"Unexpected status {status}")
+            };
         }
     }
 }
