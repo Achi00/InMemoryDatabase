@@ -4,7 +4,7 @@
     { 
         Ok,
         NotFound,
-        WrongType 
+        WrongType
     }
 
 }

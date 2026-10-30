@@ -98,6 +98,7 @@ namespace InMemoryDatabase.Storage
         {
             if (!TryGetLiveEntry(key, out StoredEntry entry))
             {
+                // missing or expired
                 return -2;
             }
 

@@ -129,6 +129,56 @@ namespace InMemoryDatabase.Storage
             return ListStatus.Ok;
         }
 
+        internal ListStatus Range(string key, int start, int end, out string[] arr)
+        {
+            if (!TryGetLiveEntry(key, out StoredEntry entry))
+            {
+                arr = Array.Empty<string>();
+                return ListStatus.NotFound;
+            }
+            if (entry.Value is not ListValue list)
+            {
+                arr = Array.Empty<string>();
+                return ListStatus.WrongType;
+            }
+
+            lock (list.Sync)
+            {
+                var length = list.Items.Count;
+                // negative index starter, return from back
+                if (start < 0)
+                {
+                    start += length;
+                }
+                if (end < 0)
+                {
+                    end += length;
+                }
+
+                // clamping values, adjust start and end according to array size if adjusted values are still outside of list
+                if (start < 0)
+                {
+                    start = 0;
+                }
+
+                // if 
+                if (end >= length)
+                {
+                    end = length - 1;
+                }
+
+                // nothing in array
+                if (start > end || start >= length)
+                {
+                    arr = Array.Empty<string>();
+                    return ListStatus.Ok;
+                }
+
+                arr = list.Items.Range(start, end - start + 1);
+                return ListStatus.Ok;
+            }
+        }
+
         // bulk push
         private static void PushAll(IListStorage items, string[] values, ListSide side)
         {
