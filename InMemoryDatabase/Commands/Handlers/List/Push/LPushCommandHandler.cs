@@ -33,7 +33,7 @@ namespace InMemoryDatabase.Commands.Handlers.List.Push
 
             var status = _store.Push(key, values, ListSide.Left, out long length);
 
-            if (status == ListStatus.WrongType)
+            if (status == StoreStatus.WrongType)
             {
                 return RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value");
             }

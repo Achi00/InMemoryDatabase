@@ -1,6 +1,6 @@
 ﻿namespace InMemoryDatabase.Storage.List.Enums
 {
-    internal enum ListStatus 
+    internal enum StoreStatus 
     { 
         Ok,
         NotFound,

@@ -23,14 +23,14 @@ namespace InMemoryDatabase.Commands.Handlers.List.Pop
 
             string key = args[0].TypeString!;
 
-            ListStatus status = _store.Pop(key, ListSide.Right, out string? value);
+            StoreStatus status = _store.Pop(key, ListSide.Right, out string? value);
 
             // depending on Pop returnes ListStatus value
             return status switch
             {
-                ListStatus.Ok => RespValue.BulkString(value!),
-                ListStatus.NotFound => RespValue.Null,
-                ListStatus.WrongType => RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value"),
+                StoreStatus.Ok => RespValue.BulkString(value!),
+                StoreStatus.NotFound => RespValue.Null,
+                StoreStatus.WrongType => RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value"),
                 _ => throw new InvalidOperationException($"Unexpected status {status}")
             };
         }

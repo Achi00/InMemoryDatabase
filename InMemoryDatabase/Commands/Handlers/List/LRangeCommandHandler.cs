@@ -30,7 +30,7 @@ namespace InMemoryDatabase.Commands.Handlers.List
 
             var status = _store.Range(key, ToIndex(start), ToIndex(end), out string[] arr);
 
-            if (status == ListStatus.WrongType)
+            if (status == StoreStatus.WrongType)
             {
                 return RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value");
             }

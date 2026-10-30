@@ -26,7 +26,7 @@ namespace InMemoryDatabase.Commands.Handlers.List
             var status = _store.Length(key, out int count);
 
 
-            if (status == ListStatus.WrongType)
+            if (status == StoreStatus.WrongType)
             {
                 return RespValue.Error("WRONGTYPE Operation against a key holding the wrong kind of value");
             }

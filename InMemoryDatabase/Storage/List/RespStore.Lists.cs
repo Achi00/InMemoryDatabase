@@ -10,7 +10,7 @@ namespace InMemoryDatabase.Storage
     public partial class RespStore
     {
         // push: RPUSH, LPUSH decidd by side property
-        internal ListStatus Push(string key, string[] values, ListSide side, out long length)
+        internal StoreStatus Push(string key, string[] values, ListSide side, out long length)
         {
             // uses main RespStore's dictionary
             while (true)
@@ -23,7 +23,7 @@ namespace InMemoryDatabase.Storage
                     if (entry.Value is not ListValue list)
                     {
                         length = 0;
-                        return ListStatus.WrongType;
+                        return StoreStatus.WrongType;
                     }
 
                     lock (list.Sync)
@@ -39,7 +39,7 @@ namespace InMemoryDatabase.Storage
 
                         PushAll(list.Items, values, side);
                         length = list.Items.Count;
-                        return ListStatus.Ok;
+                        return StoreStatus.Ok;
                     }
                 }
 
@@ -59,19 +59,19 @@ namespace InMemoryDatabase.Storage
                     // add tracking in keysets
                     _volatileKeySet.Remove(key);
                     length = newList.Items.Count;
-                    return ListStatus.Ok;
+                    return StoreStatus.Ok;
                 }
             }
         }
 
-        internal ListStatus Pop(string key, ListSide side, out string? value)
+        internal StoreStatus Pop(string key, ListSide side, out string? value)
         {
             while (true)
             {
                 if (!TryGetLiveEntry(key, out StoredEntry entry))
                 {
                     value = null;
-                    return ListStatus.NotFound;
+                    return StoreStatus.NotFound;
                 }
 
 
@@ -79,7 +79,7 @@ namespace InMemoryDatabase.Storage
                 if (entry.Value is not ListValue list)
                 {
                     value = null;
-                    return ListStatus.WrongType;
+                    return StoreStatus.WrongType;
                 }
 
                 lock (list.Sync)
@@ -102,44 +102,44 @@ namespace InMemoryDatabase.Storage
                         RemoveEmptyList(key, list);
                     }
 
-                    return ListStatus.Ok;
+                    return StoreStatus.Ok;
                 }
             }
         }
 
-        internal ListStatus Length(string key, out int count)
+        internal StoreStatus Length(string key, out int count)
         {
             if (!TryGetLiveEntry(key, out StoredEntry entry))
             {
                 count = 0;
-                return ListStatus.NotFound;
+                return StoreStatus.NotFound;
             }
 
             // key's value is not list
             if (entry.Value is not ListValue list)
             {
                 count = 0;
-                return ListStatus.WrongType;
+                return StoreStatus.WrongType;
             }
 
             lock (list.Sync)
             {
                 count = list.Items.Count;
             }
-            return ListStatus.Ok;
+            return StoreStatus.Ok;
         }
 
-        internal ListStatus Range(string key, int start, int end, out string[] arr)
+        internal StoreStatus Range(string key, int start, int end, out string[] arr)
         {
             if (!TryGetLiveEntry(key, out StoredEntry entry))
             {
                 arr = Array.Empty<string>();
-                return ListStatus.NotFound;
+                return StoreStatus.NotFound;
             }
             if (entry.Value is not ListValue list)
             {
                 arr = Array.Empty<string>();
-                return ListStatus.WrongType;
+                return StoreStatus.WrongType;
             }
 
             lock (list.Sync)
@@ -171,11 +171,11 @@ namespace InMemoryDatabase.Storage
                 if (start > end || start >= length)
                 {
                     arr = Array.Empty<string>();
-                    return ListStatus.Ok;
+                    return StoreStatus.Ok;
                 }
 
                 arr = list.Items.Range(start, end - start + 1);
-                return ListStatus.Ok;
+                return StoreStatus.Ok;
             }
         }
 
