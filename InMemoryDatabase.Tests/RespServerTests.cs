@@ -1,4 +1,5 @@
-﻿using InMemoryDatabase.Tests.Setup;
+﻿using InMemoryDatabase.Storage;
+using InMemoryDatabase.Tests.Setup;
 using System.Diagnostics;
 
 namespace InMemoryDatabase.Tests
@@ -141,7 +142,7 @@ namespace InMemoryDatabase.Tests
 
             await shutdown;
 
-            var status = _fixture.Store.TryGetString("foo", out _);
+            bool executed = _fixture.Store.TryGetString("foo", out _) == StoreStatus.Ok;
             bool replied = reply == "+OK\r\n";
 
             Assert.True(executed == replied,
