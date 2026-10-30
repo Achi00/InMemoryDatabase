@@ -1,4 +1,4 @@
-﻿namespace InMemoryDatabase.Storage.List.Enums
+﻿namespace InMemoryDatabase.Storage
 {
     internal enum StoreStatus 
     { 

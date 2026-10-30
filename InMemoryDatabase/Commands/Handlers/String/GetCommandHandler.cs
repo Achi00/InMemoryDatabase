@@ -1,6 +1,5 @@
 ﻿using InMemoryDatabase.Resp.Models;
 using InMemoryDatabase.Storage;
-using InMemoryDatabase.Storage.List.Enums;
 
 namespace InMemoryDatabase.Commands.Handlers
 {

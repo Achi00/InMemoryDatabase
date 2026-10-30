@@ -101,7 +101,9 @@ namespace InMemoryDatabase.Tests
             bool result = store.Set("foo", "baz", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfNotExists);
             Assert.False(result);
             Assert.Equal(0, store.VolatileCount);
-            Assert.True(store.TryGetString("foo", out var value));
+
+            var status = store.TryGetString("foo", out var value);
+            Assert.Equal(StoreStatus.Ok, status);
             Assert.Equal("bar", value);
         }
         [Fact]
@@ -114,7 +116,8 @@ namespace InMemoryDatabase.Tests
             bool result = store.Set("foo", "bar", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfNotExists);
             Assert.True(result);
             Assert.Equal(1, store.VolatileCount);
-            Assert.True(store.TryGetString("foo", out var value));
+            var status = store.TryGetString("foo", out var value);
+            Assert.Equal(StoreStatus.Ok, status);
             Assert.Equal("bar", value);
         }
 
@@ -129,7 +132,8 @@ namespace InMemoryDatabase.Tests
             bool result = store.Set("foo", "baz", DateTimeOffset.UtcNow.AddMinutes(1), SetCondition.IfExists);
             Assert.True(result);
             Assert.Equal(1, store.VolatileCount);
-            Assert.True(store.TryGetString("foo", out var value));
+            var status = store.TryGetString("foo", out var value);
+            Assert.Equal(StoreStatus.Ok, status);
             Assert.Equal("baz", value);
         }
 
@@ -144,7 +148,9 @@ namespace InMemoryDatabase.Tests
             Assert.False(result);
             Assert.Equal(0, store.VolatileCount);
             Assert.Equal(0, store.PhysicalCount);
-            Assert.False(store.TryGetString("foo", out var _));
+
+            var status = store.TryGetString("foo", out var value);
+            Assert.Equal(StoreStatus.NotFound, status);
         }
 
         private static void RunSampler(RespStore store, int rounds = 1000)
