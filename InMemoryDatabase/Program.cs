@@ -3,6 +3,7 @@ using InMemoryDatabase.Commands;
 using InMemoryDatabase.Commands.Handlers;
 using InMemoryDatabase.Commands.Handlers.Connection;
 using InMemoryDatabase.Commands.Handlers.KeySpace;
+using InMemoryDatabase.Commands.Handlers.List;
 using InMemoryDatabase.Commands.Handlers.String;
 using InMemoryDatabase.Exucutors;
 using InMemoryDatabase.Servers;
@@ -26,6 +27,8 @@ builder.Services.AddSingleton<ICommandHandler, IncrCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, DecrCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, DecrByCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, IncrByCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, LlenCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, LRangeCommandHandler>();
 
 // TTL sampling bg service
 builder.Services.AddHostedService<ActiveExpiryService>();
