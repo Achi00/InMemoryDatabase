@@ -113,3 +113,41 @@ Redis executes all commands on a single thread. That removes the need for locks 
 This project deliberately takes the other path: every connection runs on the .NET thread pool, and commands from different clients execute **concurrently** against shared state. The motivation is to practice the concurrency patterns that real multi-threaded .NET services need, and to make the tradeoffs concrete:
 
 `I know redis single threaded design will be more performant but I just wanted to learn more about locking and thread safety`
+
+### Low-allocation protocol parsing
+ 
+The network path is built on `System.IO.Pipelines`, `ReadOnlySequence<byte>` and `SequenceReader<byte>`:
+ 
+- Incoming bytes are parsed **in place** from pooled pipe buffers. Slicing a bulk string or finding a line terminator creates views over existing memory, not copies.
+- **Multi-segment data** is handled explicitly. When a value happens to span two buffer segments, the fast path (`IsSingleSegment` → `FirstSpan`) is skipped and the bytes are stitched into a small contiguous buffer: `stackalloc` for integer lines, which are bounded to 20 bytes, and `ArrayPool<byte>` for longer inline lines.
+- **Constant byte sequences** such as `\r\n` are exposed as `static ReadOnlySpan<byte>` properties. The compiler embeds them in the assembly's data section, so they cost no allocation and no stack space at runtime.
+- **Inline commands** are tokenized directly from bytes, without building an intermediate string for the whole line.
+- `PipeReader.AdvanceTo(consumed, examined)` is used correctly, so a partially received command does not cause the loop to spin on the same bytes.
+Remaining allocations are deliberate and documented: each parsed value becomes a `string`, and each array becomes a `RespValue[]`, because parsed commands must outlive the receive buffer. A byte-based storage and dispatch pass is on the roadmap.
+
+### Defensive parsing
+ 
+Every length on the wire is controlled by the client, so every one is bounded:
+ `All explicitly set in RespParser, I will need to test it further and harder to see limits and how much safety net this is`
+| Guard | Limit | Protects against |
+|---|---|---|
+| Array nesting depth | 32 | stack overflow through deeply nested arrays |
+| Array element count | 1,000,000 | out-of-memory from a huge declared count |
+| Bulk string length | 512 MB | out-of-memory from a huge declared length |
+| Inline / simple line length | 64 KB | unbounded buffering of a line without a terminator |
+| Integer line length | 20 bytes | unbounded `stackalloc` |
+| Incomplete command | 10 s without new data | clients that stall mid-command |
+ 
+The parser distinguishes two failure kinds with separate exception types:
+ 
+- **Incomplete data** (`RespIncompleteDataException`): the command hasn't fully arrived. The connection waits for more bytes.
+- **Protocol violation** (`RespProtocolException`): the bytes can't be valid RESP. The connection is closed, since the server can no longer tell where the next command starts.
+Command-level mistakes, such as a wrong argument count or a non-integer value, are not exceptions at all: they produce a normal `-ERR` reply, and the connection stays usable.
+It comes from `RespValue` struct.
+
+### Expiration: lazy plus active sampling
+Expiration follows Redis's two-part design:
+ 
+- **Lazy expiration** guarantees correctness. Every read checks the entry's expiry, and an expired key behaves as if it doesn't exist. Eviction is race-safe: an expired entry is removed only if it is still the exact entry that was read (`TryRemove(KeyValuePair)`), so a value written by another client at the same moment is never deleted.
+- **Active sampling** reclaims memory. Lazy expiration alone would keep expired-but-never-read keys in memory forever. A background service samples 20 random keys with a TTL every 100 ms, deletes the expired ones, and repeats immediately while more than 25% of a sample is expired, within a 10 ms time budget per cycle. Work adapts to need and is always capped.
+Keys with a TTL are tracked in a dedicated `VolatileKeySet`, so the sampler never wastes work on permanent keys. It combines a `List<string>` for O(1) random access with a `Dictionary<string, int>` index, and uses **swap-remove** for O(1) deletion. Its internal invariant (every key is at the position its index records) has a dedicated check used by the tests.
