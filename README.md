@@ -151,3 +151,15 @@ Expiration follows Redis's two-part design:
 - **Lazy expiration** guarantees correctness. Every read checks the entry's expiry, and an expired key behaves as if it doesn't exist. Eviction is race-safe: an expired entry is removed only if it is still the exact entry that was read (`TryRemove(KeyValuePair)`), so a value written by another client at the same moment is never deleted.
 - **Active sampling** reclaims memory. Lazy expiration alone would keep expired-but-never-read keys in memory forever. A background service samples 20 random keys with a TTL every 100 ms, deletes the expired ones, and repeats immediately while more than 25% of a sample is expired, within a 10 ms time budget per cycle. Work adapts to need and is always capped.
 Keys with a TTL are tracked in a dedicated `VolatileKeySet`, so the sampler never wastes work on permanent keys. It combines a `List<string>` for O(1) random access with a `Dictionary<string, int>` index, and uses **swap-remove** for O(1) deletion. Its internal invariant (every key is at the position its index records) has a dedicated check used by the tests.
+
+### Graceful shutdown
+ 
+Clients rely on one rule: **if I received a reply, the command ran; if I didn't, it didn't.** Cancelling a connection between executing a command and flushing its reply would break that rule, for example an `INCR` that was applied but never acknowledged.
+ 
+Shutdown therefore uses two separate signals:
+ 
+1. **Stop accepting** new connections.
+2. **Stop reading** (soft signal): idle connections close immediately; connections with commands already received execute them and flush the replies, then close.
+3. **Wait** for all tracked connection tasks, up to a grace period.
+4. **Abort** (hard signal) only if the grace period expires, interrupting stuck connections such as clients that stopped reading.
+Connections are tracked in a `ConcurrentDictionary` of tasks, and each one removes itself on completion, so the collection always holds exactly the live connections.
